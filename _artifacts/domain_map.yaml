@@ -1,6 +1,6 @@
 library:
-  name: "better-auth-flutterwave"
-  version: 0.1.0
+  name: better-auth-flutterwave
+  version: 0.1.1
   repository: https://github.com/alexasomba/better-auth-flutterwave
   description: >-
     Flutterwave billing plugin for Better Auth with subscriptions, transactions,
@@ -43,13 +43,13 @@ domains:
   - slug: billing-catalog-and-limits
     name: Billing Catalog and Limits
     summary: >-
-      Configure products, Flutterwave-native plans, local plans, seat
-      billing, and plan limits.
+      Configure products, Flutterwave-native plans, local plans, seat billing,
+      and plan limits.
     tasks:
       - Define products and plans in plugin options
       - >-
-        Choose between Flutterwave-native plans with paymentPlanId and local-managed
-        plans without paymentPlanId
+        Choose between Flutterwave-native plans with paymentPlanId and
+        local-managed plans without paymentPlanId
       - Configure freeTrial days and onTrialStart hooks
       - Configure seatAmount, seatPaymentPlanId, and resource limits
       - Sync Flutterwave products and plans from trusted server jobs

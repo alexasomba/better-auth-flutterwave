@@ -1,6 +1,6 @@
 library:
-  name: "better-auth-flutterwave"
-  version: 0.1.0
+  name: better-auth-flutterwave
+  version: 0.1.1
   repository: https://github.com/alexasomba/better-auth-flutterwave
   license: MIT
   compatibility: >-
@@ -12,7 +12,7 @@ library:
 generated_from:
   domain_map: _artifacts/domain_map.yaml
   skill_spec: _artifacts/skill_spec.md
-generated_at: "2026-05-09T00:00:00Z"
+generated_at: '2026-05-09T00:00:00Z'
 skills:
   - name: better-auth-flutterwave/setup
     slug: setup
@@ -41,8 +41,8 @@ skills:
       Node.js >=22.0.0; better-auth ^1.6.9; flutterwave-node-v3 1.4.x;
       better-auth-flutterwave >=0.1.0 <1.0.0
     description: >-
-      Build Flutterwave checkout, transaction verification, subscription lifecycle,
-      products/plans, and server-only renewal/sync flows.
+      Build Flutterwave checkout, transaction verification, subscription
+      lifecycle, products/plans, and server-only renewal/sync flows.
     sources:
       - alexasomba/better-auth-flutterwave:README.md
       - alexasomba/better-auth-flutterwave:src/routes.ts
@@ -75,8 +75,8 @@ skills:
       Node.js >=22.0.0; better-auth ^1.6.9; flutterwave-node-v3 1.4.x;
       better-auth-flutterwave >=0.1.0 <1.0.0
     description: >-
-      Configure products, Flutterwave-native plans, local plans, seat
-      billing, plan limits, and catalog sync jobs.
+      Configure products, Flutterwave-native plans, local plans, seat billing,
+      plan limits, and catalog sync jobs.
     sources:
       - alexasomba/better-auth-flutterwave:README.md
       - alexasomba/better-auth-flutterwave:src/types.ts
@@ -99,6 +99,7 @@ skills:
     sources:
       - alexasomba/better-auth-flutterwave:examples/tanstack/README.md
       - alexasomba/better-auth-flutterwave:examples/tanstack/src/lib/auth.ts
-      - alexasomba/better-auth-flutterwave:examples/tanstack/src/lib/auth-client.ts
+      - >-
+        alexasomba/better-auth-flutterwave:examples/tanstack/src/lib/auth-client.ts
       - >-
         alexasomba/better-auth-flutterwave:examples/tanstack/src/routes/api/auth/$.ts
