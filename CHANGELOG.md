@@ -2,6 +2,13 @@
 
 All notable changes to `better-auth-flutterwave` will be documented in this file.
 
+## [0.1.4](https://github.com/alexasomba/better-auth-flutterwave/compare/v0.1.3...v0.1.4) (2026-07-29)
+
+
+### Bug Fixes
+
+* exclude release-managed files from formatting ([0644097](https://github.com/alexasomba/better-auth-flutterwave/commit/06440978856cb03d59b60b4e6cae456e86d1bed5))
+
 ## [0.1.3](https://github.com/alexasomba/better-auth-flutterwave/compare/v0.1.2...v0.1.3) (2026-07-29)
 
 

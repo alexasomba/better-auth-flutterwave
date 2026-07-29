@@ -3,7 +3,7 @@ name: flutterwave-schema-migrations
 description: Review or migrate the namespaced Better Auth Flutterwave persistence schema.
 metadata:
   library: "better-auth-flutterwave"
-  version: "0.1.3" # x-release-please-version
+  version: "0.1.4" # x-release-please-version
 compatibility: "Node.js >=22; better-auth ^1.6"
 ---
 
