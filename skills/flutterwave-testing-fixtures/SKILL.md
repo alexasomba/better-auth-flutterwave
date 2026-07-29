@@ -3,7 +3,7 @@ name: flutterwave-testing-fixtures
 description: Create accurate Flutterwave adapter, checkout, webhook, subscription, and reconciliation tests.
 metadata:
   library: "better-auth-flutterwave"
-  version: "0.1.2" # x-release-please-version
+  version: "0.1.3" # x-release-please-version
 compatibility: "Node.js >=22; Vitest; flutterwave-node-v3 1.4.x"
 ---
 

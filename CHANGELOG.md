@@ -2,6 +2,13 @@
 
 All notable changes to `better-auth-flutterwave` will be documented in this file.
 
+## [0.1.3](https://github.com/alexasomba/better-auth-flutterwave/compare/v0.1.2...v0.1.3) (2026-07-29)
+
+
+### Bug Fixes
+
+* synchronize packaged skill versions ([894a5a3](https://github.com/alexasomba/better-auth-flutterwave/commit/894a5a3c8859b83f837a7209812b3ac8c71185a9))
+
 ## [0.1.2](https://github.com/alexasomba/better-auth-flutterwave/compare/v0.1.1...v0.1.2) (2026-07-29)
 
 ### Documentation
