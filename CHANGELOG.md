@@ -4,10 +4,9 @@ All notable changes to `better-auth-flutterwave` will be documented in this file
 
 ## [0.1.2](https://github.com/alexasomba/better-auth-flutterwave/compare/v0.1.1...v0.1.2) (2026-07-29)
 
-
 ### Documentation
 
-* expand setup and skills guide ([42317a4](https://github.com/alexasomba/better-auth-flutterwave/commit/42317a4721ddbed05e156ad6319611421deb3dd3))
+- expand setup and skills guide ([42317a4](https://github.com/alexasomba/better-auth-flutterwave/commit/42317a4721ddbed05e156ad6319611421deb3dd3))
 
 ## [0.1.1](https://github.com/alexasomba/better-auth-flutterwave/compare/v0.1.0...v0.1.1) (2026-07-29)
 
