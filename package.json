@@ -1,6 +1,6 @@
 {
   "name": "better-auth-flutterwave",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Production-ready Flutterwave billing plugin for Better Auth. Supports subscriptions, one-time payments, organization billing, secure webhooks and more",
   "keywords": [
     "africa",
