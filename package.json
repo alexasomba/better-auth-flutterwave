@@ -108,7 +108,7 @@
     "typescript": "catalog:",
     "typescript-eslint": "catalog:",
     "vite-plus": "catalog:",
-    "vitest": "catalog:"
+    "vitest": "^4.1.10"
   },
   "peerDependencies": {
     "better-auth": "catalog:",
@@ -120,5 +120,12 @@
   "engines": {
     "node": ">=22.0.0"
   },
-  "packageManager": "pnpm@11.8.0"
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "11.18.0",
+      "onFail": "download"
+    }
+  },
+  "packageManager": "pnpm@11.18.0"
 }
