@@ -10,6 +10,7 @@ import {
   type FlutterwaveProduct,
   type FlutterwaveOptions,
 } from "better-auth-flutterwave";
+import { createCloudflareFlutterwaveClient } from "./flutterwave-cloudflare-client";
 
 export const data: Record<string, unknown[]> = {
   user: [],
@@ -129,6 +130,7 @@ export const flutterwaveOptions = isFlutterwaveConfigured
       publicKey: publicKey!,
       secretKey: secretKey!,
       secretHash: secretHash!,
+      flutterwaveClient: createCloudflareFlutterwaveClient(secretKey!),
       organization: {
         enabled: true,
       },
