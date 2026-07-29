@@ -2,7 +2,6 @@
 import { betterAuth } from "better-auth";
 import { memoryAdapter } from "better-auth/adapters/memory";
 import { anonymous, organization, admin } from "better-auth/plugins";
-import { dash } from "@better-auth/infra";
 import { tanstackStartCookies } from "better-auth/tanstack-start";
 import {
   flutterwave,
@@ -10,7 +9,7 @@ import {
   type FlutterwavePlan,
   type FlutterwaveProduct,
   type FlutterwaveOptions,
-} from "@alexasomba/better-auth-flutterwave";
+} from "better-auth-flutterwave";
 
 export const data: Record<string, unknown[]> = {
   user: [],
@@ -221,7 +220,6 @@ export const auth = betterAuth({
           }),
         ]
       : []),
-    dash(),
     tanstackStartCookies(), // make sure this is the last plugin in the array
   ],
 });

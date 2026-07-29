@@ -1,15 +1,15 @@
 ---
 name: better-auth-flutterwave-setup
-description: Set up @alexasomba/better-auth-flutterwave with Better Auth and Flutterwave v3.
+description: Set up better-auth-flutterwave with Better Auth and Flutterwave v3.
 metadata:
-  library: "@alexasomba/better-auth-flutterwave"
+  library: "better-auth-flutterwave"
   version: "0.1.0"
 compatibility: "Node.js >=22; better-auth ^1.6; flutterwave-node-v3 1.4.x"
 ---
 
 # Better Auth Flutterwave setup
 
-Install `better-auth`, `@alexasomba/better-auth-flutterwave`, and `flutterwave-node-v3`.
+Install `better-auth`, `better-auth-flutterwave`, and `flutterwave-node-v3`.
 
 Configure `publicKey`, `secretKey`, and the separately managed webhook `secretHash`. The optional
 `flutterwaveClient` and `fetch` options support dependency injection. Register `flutterwaveClient`

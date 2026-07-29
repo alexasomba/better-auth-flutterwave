@@ -2,8 +2,8 @@
 
 This package should expose skills for agents implementing Flutterwave billing with Better Auth. The skills should be task-focused and grounded in the public package surface:
 
-- `flutterwave()` server plugin from `@alexasomba/better-auth-flutterwave`
-- `flutterwaveClient()` client plugin from `@alexasomba/better-auth-flutterwave/client`
+- `flutterwave()` server plugin from `better-auth-flutterwave`
+- `flutterwaveClient()` client plugin from `better-auth-flutterwave/client`
 - subscription actions: `create`, `upgrade`, `cancel`, `restore`, `list`
 - transaction actions: initialize, verify, list
 - server-only operations: renewal, reconciliation, refunds, and `syncFlutterwavePlans`
@@ -35,7 +35,7 @@ Generate flat skills because the package is focused and has fewer than five high
 ## Shared Constraints
 
 - Include `license: "MIT"` and `compatibility` frontmatter in every skill shipped to npm.
-- Compatibility must state Node.js `>=22.0.0`, Better Auth `^1.6.9`, `flutterwave-node-v3` `1.4.x`, and the supported `@alexasomba/better-auth-flutterwave` line `>=0.1.0 <1.0.0`.
+- Compatibility must state Node.js `>=22.0.0`, Better Auth `^1.6.9`, `flutterwave-node-v3` `1.4.x`, and the supported `better-auth-flutterwave` line `>=0.1.0 <1.0.0`.
 - Do not instruct agents to import from `@better-auth/core/*` in runtime package code.
 - Keep product and plan schema tables enabled by default.
 - Prefer canonical client methods over deprecated `subscription.disable` and `subscription.enable` aliases.

@@ -1,6 +1,6 @@
 import { createAuthClient } from "better-auth/react";
 import { anonymousClient, organizationClient, adminClient } from "better-auth/client/plugins";
-import { flutterwaveClient } from "@alexasomba/better-auth-flutterwave/client";
+import { flutterwaveClient } from "better-auth-flutterwave/client";
 
 export const authClient = createAuthClient({
   baseURL:

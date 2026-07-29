@@ -15,7 +15,7 @@ const config = defineConfig({
     tsconfigPaths: true,
   },
   ssr: {
-    noExternal: ["@alexasomba/better-auth-flutterwave"],
+    noExternal: ["better-auth-flutterwave"],
   },
   plugins: [
     devtools(),

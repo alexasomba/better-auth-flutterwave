@@ -1,5 +1,5 @@
 import { authClient } from "@/lib/auth-client";
-import type { FlutterwaveClientActions } from "@alexasomba/better-auth-flutterwave/client";
+import type { FlutterwaveClientActions } from "better-auth-flutterwave/client";
 
 interface BetterAuthFlutterwaveClient {
   flutterwave: FlutterwaveClientActions;

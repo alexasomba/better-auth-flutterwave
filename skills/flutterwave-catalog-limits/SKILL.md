@@ -2,7 +2,7 @@
 name: flutterwave-catalog-limits
 description: Configure Flutterwave payment plans and local products, limits, seats, and inventory.
 metadata:
-  library: "@alexasomba/better-auth-flutterwave"
+  library: "better-auth-flutterwave"
   version: "0.1.0"
 compatibility: "Node.js >=22; better-auth ^1.6; flutterwave-node-v3 1.4.x"
 ---

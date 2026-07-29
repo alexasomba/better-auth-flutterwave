@@ -1,11 +1,11 @@
 library:
-  name: "@alexasomba/better-auth-flutterwave"
+  name: "better-auth-flutterwave"
   version: 0.1.0
   repository: https://github.com/alexasomba/better-auth-flutterwave
   license: MIT
   compatibility: >-
     Node.js >=22.0.0; better-auth ^1.6.9; flutterwave-node-v3 1.4.x;
-    @alexasomba/better-auth-flutterwave >=0.1.0 <1.0.0
+    better-auth-flutterwave >=0.1.0 <1.0.0
   description: >-
     Flutterwave billing plugin for Better Auth with subscriptions, transactions,
     organization billing, and webhooks.
@@ -22,7 +22,7 @@ skills:
     license: MIT
     compatibility: >-
       Node.js >=22.0.0; better-auth ^1.6.9; flutterwave-node-v3 1.4.x;
-      @alexasomba/better-auth-flutterwave >=0.1.0 <1.0.0
+      better-auth-flutterwave >=0.1.0 <1.0.0
     description: >-
       Configure the Better Auth Flutterwave server and client plugins, schema,
       products, plans, webhook secret, and canonical client actions.
@@ -39,7 +39,7 @@ skills:
     license: MIT
     compatibility: >-
       Node.js >=22.0.0; better-auth ^1.6.9; flutterwave-node-v3 1.4.x;
-      @alexasomba/better-auth-flutterwave >=0.1.0 <1.0.0
+      better-auth-flutterwave >=0.1.0 <1.0.0
     description: >-
       Build Flutterwave checkout, transaction verification, subscription lifecycle,
       products/plans, and server-only renewal/sync flows.
@@ -56,7 +56,7 @@ skills:
     license: MIT
     compatibility: >-
       Node.js >=22.0.0; better-auth ^1.6.9; flutterwave-node-v3 1.4.x;
-      @alexasomba/better-auth-flutterwave >=0.1.0 <1.0.0
+      better-auth-flutterwave >=0.1.0 <1.0.0
     description: >-
       Configure organization billing authorization, owner/admin defaults, custom
       authorizeReference, organization customer creation, and seat/team limits.
@@ -73,7 +73,7 @@ skills:
     license: MIT
     compatibility: >-
       Node.js >=22.0.0; better-auth ^1.6.9; flutterwave-node-v3 1.4.x;
-      @alexasomba/better-auth-flutterwave >=0.1.0 <1.0.0
+      better-auth-flutterwave >=0.1.0 <1.0.0
     description: >-
       Configure products, Flutterwave-native plans, local plans, seat
       billing, plan limits, and catalog sync jobs.
@@ -91,7 +91,7 @@ skills:
     license: MIT
     compatibility: >-
       Node.js >=22.0.0; better-auth ^1.6.9; flutterwave-node-v3 1.4.x;
-      @alexasomba/better-auth-flutterwave >=0.1.0 <1.0.0
+      better-auth-flutterwave >=0.1.0 <1.0.0
     description: >-
       Integrate Better Auth Flutterwave in TanStack Start with auth routes,
       tanstackStartCookies, server functions, client actions, and Cloudflare

@@ -2,7 +2,7 @@
 name: flutterwave-tanstack-start
 description: Integrate Better Auth Flutterwave into a TanStack Start application.
 metadata:
-  library: "@alexasomba/better-auth-flutterwave"
+  library: "better-auth-flutterwave"
   version: "0.1.0"
 compatibility: "Node.js >=22; TanStack Start; better-auth ^1.6"
 ---

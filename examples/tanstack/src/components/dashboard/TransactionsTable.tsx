@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { FlutterwaveTransaction } from "@alexasomba/better-auth-flutterwave";
+import type { FlutterwaveTransaction } from "better-auth-flutterwave";
 import { authClient } from "@/lib/auth-client";
 import {
   Table,

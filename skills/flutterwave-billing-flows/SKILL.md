@@ -2,7 +2,7 @@
 name: flutterwave-billing-flows
 description: Build verified Flutterwave checkout and subscription flows with Better Auth.
 metadata:
-  library: "@alexasomba/better-auth-flutterwave"
+  library: "better-auth-flutterwave"
   version: "0.1.0"
 compatibility: "Node.js >=22; better-auth ^1.6; flutterwave-node-v3 1.4.x"
 ---

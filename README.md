@@ -13,7 +13,7 @@ webhooks, refunds, and reconciliation.
 ## Install
 
 ```bash
-npm install better-auth @alexasomba/better-auth-flutterwave flutterwave-node-v3
+npm install better-auth better-auth-flutterwave flutterwave-node-v3
 ```
 
 Node.js 22 or newer is required.
@@ -30,7 +30,7 @@ BETTER_AUTH_URL=http://localhost:3000
 
 ```ts
 import { betterAuth } from "better-auth";
-import { flutterwave } from "@alexasomba/better-auth-flutterwave";
+import { flutterwave } from "better-auth-flutterwave";
 
 export const auth = betterAuth({
   plugins: [
@@ -73,7 +73,7 @@ Configure the client plugin:
 
 ```ts
 import { createAuthClient } from "better-auth/client";
-import { flutterwaveClient } from "@alexasomba/better-auth-flutterwave/client";
+import { flutterwaveClient } from "better-auth-flutterwave/client";
 
 export const authClient = createAuthClient({
   plugins: [flutterwaveClient({ subscription: true })],

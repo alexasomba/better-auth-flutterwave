@@ -22,7 +22,7 @@ export const defaultSeoDescription =
 const fallbackOrigin = "http://localhost:3000";
 const defaultImagePath = "/logo512.png";
 const githubUrl = "https://github.com/alexasomba/better-auth-flutterwave";
-const npmUrl = "https://www.npmjs.com/package/@alexasomba/better-auth-flutterwave";
+const npmUrl = "https://www.npmjs.com/package/better-auth-flutterwave";
 
 export function getSeoOrigin() {
   if (typeof window !== "undefined") {

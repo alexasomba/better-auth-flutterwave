@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to `@alexasomba/better-auth-flutterwave` will be documented in this file.
+All notable changes to `better-auth-flutterwave` will be documented in this file.
 
 ## 0.1.0
 

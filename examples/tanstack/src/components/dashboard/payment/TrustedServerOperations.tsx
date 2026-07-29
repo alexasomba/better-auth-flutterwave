@@ -1,8 +1,4 @@
-import type {
-  FlutterwavePlan,
-  FlutterwaveProduct,
-  Subscription,
-} from "@alexasomba/better-auth-flutterwave";
+import type { FlutterwavePlan, FlutterwaveProduct, Subscription } from "better-auth-flutterwave";
 
 import { Button } from "@/components/ui/button";
 import {

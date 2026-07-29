@@ -1,5 +1,5 @@
 library:
-  name: "@alexasomba/better-auth-flutterwave"
+  name: "better-auth-flutterwave"
   version: 0.1.0
   repository: https://github.com/alexasomba/better-auth-flutterwave
   description: >-

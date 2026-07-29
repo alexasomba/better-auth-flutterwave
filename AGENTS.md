@@ -1,4 +1,4 @@
-# Agents Context: @alexasomba/better-auth-flutterwave
+# Agents Context: better-auth-flutterwave
 
 <!--VITE PLUS START-->
 

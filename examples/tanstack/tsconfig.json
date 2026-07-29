@@ -24,8 +24,8 @@
     "types": ["node", "react", "react-dom", "@testing-library/jest-dom"],
     "paths": {
       "@/*": ["./src/*"],
-      "@alexasomba/better-auth-flutterwave": ["../../src/index.ts"],
-      "@alexasomba/better-auth-flutterwave/client": ["../../src/client.ts"]
+      "better-auth-flutterwave": ["../../src/index.ts"],
+      "better-auth-flutterwave/client": ["../../src/client.ts"]
     }
   }
 }

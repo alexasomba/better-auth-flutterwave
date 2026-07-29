@@ -1,5 +1,5 @@
 {
-  "name": "@alexasomba/better-auth-flutterwave",
+  "name": "better-auth-flutterwave",
   "version": "0.1.0",
   "description": "Production-ready Flutterwave billing plugin for Better Auth. Supports subscriptions, one-time payments, organization billing, secure webhooks and more",
   "keywords": [
@@ -75,6 +75,7 @@
     "lint": "vp lint src",
     "lint:package": "publint run --strict",
     "lint:types": "node scripts/lint-types-packed.mjs",
+    "prepublishOnly": "vp check && vp test run && vp pack && pnpm run lint:package && pnpm run lint:types",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "skills:install": "skills-npm --cwd examples/tanstack --yes --force",
     "skills:dry-run": "skills-npm --cwd examples/tanstack --dry-run --yes --agents universal --force"
@@ -82,7 +83,6 @@
   "dependencies": {
     "better-call": "catalog:",
     "defu": "catalog:",
-    "flutterwave-node-v3": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
@@ -102,6 +102,7 @@
     "eslint-plugin-promise": "catalog:",
     "eslint-plugin-react-hooks": "catalog:",
     "eslint-plugin-unicorn": "catalog:",
+    "flutterwave-node-v3": "catalog:",
     "publint": "catalog:",
     "skills-npm": "catalog:",
     "typescript": "catalog:",
@@ -110,7 +111,8 @@
     "vitest": "catalog:"
   },
   "peerDependencies": {
-    "better-auth": "catalog:"
+    "better-auth": "catalog:",
+    "flutterwave-node-v3": "catalog:"
   },
   "optionalDependencies": {
     "@rollup/rollup-linux-x64-gnu": "catalog:"

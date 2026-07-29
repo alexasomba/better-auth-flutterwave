@@ -1,9 +1,5 @@
 import { useEffect, useState } from "react";
-import type {
-  FlutterwavePlan,
-  FlutterwaveProduct,
-  Subscription,
-} from "@alexasomba/better-auth-flutterwave";
+import type { FlutterwavePlan, FlutterwaveProduct, Subscription } from "better-auth-flutterwave";
 import { authClient } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
