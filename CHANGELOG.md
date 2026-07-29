@@ -2,6 +2,13 @@
 
 All notable changes to `better-auth-flutterwave` will be documented in this file.
 
+## [0.1.5](https://github.com/alexasomba/better-auth-flutterwave/compare/v0.1.4...v0.1.5) (2026-07-29)
+
+
+### Bug Fixes
+
+* support Flutterwave example on Cloudflare Workers ([#10](https://github.com/alexasomba/better-auth-flutterwave/issues/10)) ([39c5a91](https://github.com/alexasomba/better-auth-flutterwave/commit/39c5a91c9c24c5293239b26a9a18003ba1c39ecb))
+
 ## [0.1.4](https://github.com/alexasomba/better-auth-flutterwave/compare/v0.1.3...v0.1.4) (2026-07-29)
 
 
