@@ -117,15 +117,15 @@
   "optionalDependencies": {
     "@rollup/rollup-linux-x64-gnu": "catalog:"
   },
-  "engines": {
-    "node": ">=22.0.0"
-  },
   "devEngines": {
     "packageManager": {
       "name": "pnpm",
       "version": "11.18.0",
       "onFail": "download"
     }
+  },
+  "engines": {
+    "node": ">=22.0.0"
   },
   "packageManager": "pnpm@11.18.0"
 }
