@@ -178,8 +178,8 @@ catalogs:
       specifier: ^3.6.0
       version: 3.6.0
     tailwindcss:
-      specifier: ^4.3.0
-      version: 4.3.0
+      specifier: ^4.3.3
+      version: 4.3.3
     tsx:
       specifier: ^4.22.4
       version: 4.22.4
@@ -374,7 +374,7 @@ importers:
         version: 3.6.0
       tailwindcss:
         specifier: 'catalog:'
-        version: 4.3.0
+        version: 4.3.3
       tw-animate-css:
         specifier: 'catalog:'
         version: 1.4.0
@@ -4731,6 +4731,9 @@ packages:
 
   tailwindcss@4.3.0:
     resolution: {integrity: sha512-y6nxMGB1nMW9R6k96e5gdIFzcfL/gTJRNaqGes1YvkLnPVXzWgbqFF2yLC0T8G774n24cx3Pe8XrKoniCOAH+Q==}
+
+  tailwindcss@4.3.3:
+    resolution: {integrity: sha512-gOhV3P7ufE62QDGg1zVaTgCR+EtPv92k2nIhVcVKcLmxT1sUBsQGhnZj175j+MqRt4zLF7ic+sCYjfhxMxj7YQ==}
 
   tapable@2.3.2:
     resolution: {integrity: sha512-1MOpMXuhGzGL5TTCZFItxCc0AARf1EZFQkGqMm7ERKj8+Hgr5oLvJOVFcC+lRmR8hCe2S3jC4T5D7Vg/d7/fhA==}
@@ -9299,6 +9302,8 @@ snapshots:
   tailwind-merge@3.6.0: {}
 
   tailwindcss@4.3.0: {}
+
+  tailwindcss@4.3.3: {}
 
   tapable@2.3.2: {}
 
