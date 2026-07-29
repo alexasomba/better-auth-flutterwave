@@ -209,7 +209,7 @@ pnpm run lint:package
 Integration tests require Flutterwave sandbox credentials and are opt-in:
 
 ```bash
-RUN_INTEGRATION_TESTS=1 vp test
+RUN_INTEGRATION_TESTS=true vp test
 ```
 
 ## License

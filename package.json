@@ -70,7 +70,7 @@
     "build": "vp pack",
     "dev": "vp pack --watch",
     "test": "vp test run",
-    "test:integration": "RUN_INTEGRATION_TESTS=1 vp test run",
+    "test:integration": "RUN_INTEGRATION_TESTS=true vp test run",
     "coverage": "vp test run --coverage",
     "lint": "vp lint src",
     "lint:package": "publint run --strict",
