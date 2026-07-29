@@ -93,11 +93,10 @@ type FlutterwaveConstructor = new (
   production?: boolean | string,
 ) => FlutterwaveSdkClient;
 
-const require = createRequire(import.meta.url);
-
 function createSdkClient(publicKey: string, secretKey: string): FlutterwaveSdkClient {
   // The official package is CommonJS and ships no TypeScript declarations. Keeping the
   // assertion here prevents its `any` surface from escaping into application code.
+  const require = createRequire(import.meta.url);
   const Flutterwave = require("flutterwave-node-v3") as FlutterwaveConstructor;
   return new Flutterwave(publicKey, secretKey);
 }
