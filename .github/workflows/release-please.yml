@@ -51,7 +51,7 @@ jobs:
 
       - name: Checkout release tag
         if: ${{ env.release_tag != '' }}
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
           ref: ${{ env.release_tag }}
@@ -62,10 +62,15 @@ jobs:
 
       - name: Setup Node
         if: ${{ env.release_tag != '' }}
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: "24.x"
           registry-url: "https://registry.npmjs.org"
+          package-manager-cache: false
+
+      - name: Install npm with trusted publishing support
+        if: ${{ env.release_tag != '' }}
+        run: npm install --global npm@11.18.0
 
       - name: Install dependencies
         if: ${{ env.release_tag != '' }}
@@ -128,8 +133,6 @@ jobs:
             echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Publish to npmjs with provenance
+      - name: Publish to npmjs with trusted publishing
         if: ${{ env.release_tag != '' && steps.npmjs.outputs.exists != 'true' }}
         run: npm publish "${{ steps.pack.outputs.tarball }}" --access public --provenance --tag latest
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
