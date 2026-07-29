@@ -1,0 +1,6 @@
+interface:
+  display_name: "Better Auth Flutterwave Catalog"
+  short_description: "Products, plans, seats, and limits"
+  default_prompt: "Use $flutterwave-catalog-limits to configure Flutterwave products, subscription plans, seat billing, and resource limits."
+policy:
+  allow_implicit_invocation: true

@@ -1,0 +1,6 @@
+interface:
+  display_name: "Better Auth Flutterwave Schema"
+  short_description: "Database schema and migration guidance"
+  default_prompt: "Use $flutterwave-schema-migrations to review or change Better Auth Flutterwave schema and migration behavior."
+policy:
+  allow_implicit_invocation: true

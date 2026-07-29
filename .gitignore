@@ -1,0 +1,49 @@
+node_modules/
+dist/
+.DS_Store
+*.log
+.vscode/
+.env
+.env.local
+.env.*.local
+.github/copilot-instructions.md
+ci-artifacts/
+coverage/
+playwright-report/
+test-results/
+examples/*/playwright-report/
+examples/*/test-results/
+
+# TypeScript build cache
+*.tsbuildinfo
+
+# Auto-generated config files (from .ts sources)
+tsdown.config.js
+tsdown.config.d.ts
+tsdown.config.d.ts.map
+vitest.config.js
+vitest.config.d.ts.map
+vite.config.js
+vite.config.d.ts
+vite.config.d.ts.map
+
+# Compiled test files
+test/**/*.js
+test/**/*.d.ts
+test/**/*.d.ts.map
+
+.tmp
+tmp
+src/**/*.js
+src/**/*.d.ts
+src/**/*.d.ts.map
+lint-results*
+docs/
+test_output.txt
+test_output*
+
+typecheck_output*
+GEMINI.md
+
+# Agent skills from npm packages (managed by skills-npm)
+**/skills/npm-*

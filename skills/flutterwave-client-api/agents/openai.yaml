@@ -1,0 +1,6 @@
+interface:
+  display_name: "Better Auth Flutterwave Client API"
+  short_description: "Browser client methods and return contracts"
+  default_prompt: "Use $flutterwave-client-api to wire or review authClient Flutterwave, transaction, and subscription browser APIs."
+policy:
+  allow_implicit_invocation: true

@@ -1,0 +1,7 @@
+* @alexasomba
+
+# CODEOWNERS for better-auth-flutterwave
+# Owners listed below will be requested for changes to matching paths.
+
+/examples/ @alexasomba
+/.github/ @alexasomba

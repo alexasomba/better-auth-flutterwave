@@ -1,0 +1,104 @@
+library:
+  name: "@alexasomba/better-auth-flutterwave"
+  version: 0.1.0
+  repository: https://github.com/alexasomba/better-auth-flutterwave
+  license: MIT
+  compatibility: >-
+    Node.js >=22.0.0; better-auth ^1.6.9; flutterwave-node-v3 1.4.x;
+    @alexasomba/better-auth-flutterwave >=0.1.0 <1.0.0
+  description: >-
+    Flutterwave billing plugin for Better Auth with subscriptions, transactions,
+    organization billing, and webhooks.
+generated_from:
+  domain_map: _artifacts/domain_map.yaml
+  skill_spec: _artifacts/skill_spec.md
+generated_at: "2026-05-09T00:00:00Z"
+skills:
+  - name: better-auth-flutterwave/setup
+    slug: setup
+    type: core
+    domain: setup
+    path: skills/better-auth-flutterwave-setup/SKILL.md
+    license: MIT
+    compatibility: >-
+      Node.js >=22.0.0; better-auth ^1.6.9; flutterwave-node-v3 1.4.x;
+      @alexasomba/better-auth-flutterwave >=0.1.0 <1.0.0
+    description: >-
+      Configure the Better Auth Flutterwave server and client plugins, schema,
+      products, plans, webhook secret, and canonical client actions.
+    sources:
+      - alexasomba/better-auth-flutterwave:README.md
+      - alexasomba/better-auth-flutterwave:src/index.ts
+      - alexasomba/better-auth-flutterwave:src/client.ts
+      - alexasomba/better-auth-flutterwave:src/schema.ts
+  - name: better-auth-flutterwave/subscriptions-and-transactions
+    slug: subscriptions-and-transactions
+    type: core
+    domain: subscriptions-and-transactions
+    path: skills/flutterwave-billing-flows/SKILL.md
+    license: MIT
+    compatibility: >-
+      Node.js >=22.0.0; better-auth ^1.6.9; flutterwave-node-v3 1.4.x;
+      @alexasomba/better-auth-flutterwave >=0.1.0 <1.0.0
+    description: >-
+      Build Flutterwave checkout, transaction verification, subscription lifecycle,
+      products/plans, and server-only renewal/sync flows.
+    sources:
+      - alexasomba/better-auth-flutterwave:README.md
+      - alexasomba/better-auth-flutterwave:src/routes.ts
+      - alexasomba/better-auth-flutterwave:src/operations.ts
+      - alexasomba/better-auth-flutterwave:src/client.ts
+  - name: better-auth-flutterwave/organization-billing
+    slug: organization-billing
+    type: core
+    domain: organization-billing
+    path: skills/flutterwave-organization-billing/SKILL.md
+    license: MIT
+    compatibility: >-
+      Node.js >=22.0.0; better-auth ^1.6.9; flutterwave-node-v3 1.4.x;
+      @alexasomba/better-auth-flutterwave >=0.1.0 <1.0.0
+    description: >-
+      Configure organization billing authorization, owner/admin defaults, custom
+      authorizeReference, organization customer creation, and seat/team limits.
+    sources:
+      - alexasomba/better-auth-flutterwave:README.md
+      - alexasomba/better-auth-flutterwave:src/index.ts
+      - alexasomba/better-auth-flutterwave:src/utils.ts
+      - alexasomba/better-auth-flutterwave:src/limits.ts
+  - name: better-auth-flutterwave/billing-catalog-and-limits
+    slug: billing-catalog-and-limits
+    type: core
+    domain: billing-catalog-and-limits
+    path: skills/flutterwave-catalog-limits/SKILL.md
+    license: MIT
+    compatibility: >-
+      Node.js >=22.0.0; better-auth ^1.6.9; flutterwave-node-v3 1.4.x;
+      @alexasomba/better-auth-flutterwave >=0.1.0 <1.0.0
+    description: >-
+      Configure products, Flutterwave-native plans, local plans, seat
+      billing, plan limits, and catalog sync jobs.
+    sources:
+      - alexasomba/better-auth-flutterwave:README.md
+      - alexasomba/better-auth-flutterwave:src/types.ts
+      - alexasomba/better-auth-flutterwave:src/routes.ts
+      - alexasomba/better-auth-flutterwave:src/operations.ts
+      - alexasomba/better-auth-flutterwave:src/utils.ts
+  - name: better-auth-flutterwave/tanstack-start
+    slug: tanstack-start
+    type: composition
+    domain: tanstack-start
+    path: skills/flutterwave-tanstack-start/SKILL.md
+    license: MIT
+    compatibility: >-
+      Node.js >=22.0.0; better-auth ^1.6.9; flutterwave-node-v3 1.4.x;
+      @alexasomba/better-auth-flutterwave >=0.1.0 <1.0.0
+    description: >-
+      Integrate Better Auth Flutterwave in TanStack Start with auth routes,
+      tanstackStartCookies, server functions, client actions, and Cloudflare
+      Workers.
+    sources:
+      - alexasomba/better-auth-flutterwave:examples/tanstack/README.md
+      - alexasomba/better-auth-flutterwave:examples/tanstack/src/lib/auth.ts
+      - alexasomba/better-auth-flutterwave:examples/tanstack/src/lib/auth-client.ts
+      - >-
+        alexasomba/better-auth-flutterwave:examples/tanstack/src/routes/api/auth/$.ts

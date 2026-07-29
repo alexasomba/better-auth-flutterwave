@@ -1,0 +1,6 @@
+interface:
+  display_name: "Better Auth Flutterwave Local Subs"
+  short_description: "Local subscriptions and renewals"
+  default_prompt: "Use $flutterwave-local-subscriptions to implement or debug local-managed Flutterwave subscription lifecycle behavior."
+policy:
+  allow_implicit_invocation: true

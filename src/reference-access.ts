@@ -1,0 +1,111 @@
+import type { GenericEndpointContext } from "better-auth";
+import { APIError } from "better-auth/api";
+
+import type { AnyFlutterwaveOptions, Session, User } from "./types";
+
+export type BillingReferenceAction =
+  | "initialize-transaction"
+  | "verify-transaction"
+  | "list-subscriptions"
+  | "list-transactions"
+  | "disable-subscription"
+  | "enable-subscription"
+  | "get-subscription-manage-link";
+
+const DEFAULT_BILLING_ORG_ROLES = ["owner", "admin"] as const;
+
+function normalizeBillingRoles(roles: readonly string[]): Set<string> {
+  return new Set(roles.map((value) => value.trim()).filter((value) => value !== ""));
+}
+
+export function getBillingRoles(options: AnyFlutterwaveOptions): readonly string[] {
+  return options.organization?.billingRoles ?? DEFAULT_BILLING_ORG_ROLES;
+}
+
+export function hasBillingRole(
+  role: unknown,
+  billingRoles: readonly string[] = DEFAULT_BILLING_ORG_ROLES,
+): boolean {
+  const allowedRoles = normalizeBillingRoles(billingRoles);
+  if (Array.isArray(role)) {
+    return role.some((value) => hasBillingRole(value, billingRoles));
+  }
+  if (typeof role !== "string") {
+    return false;
+  }
+  return role
+    .split(",")
+    .map((value) => value.trim())
+    .some((value) => allowedRoles.has(value));
+}
+
+export function resolveBillingReferenceId(input: {
+  body?: unknown;
+  query?: unknown;
+  requestUrl?: string;
+  fallbackUserId: string;
+}): string {
+  const body = (input.body ?? {}) as Record<string, unknown>;
+  const query = (input.query ?? {}) as Record<string, unknown>;
+  const requestQueryReferenceId =
+    typeof input.requestUrl === "string"
+      ? (new URL(input.requestUrl).searchParams.get("referenceId") ?? undefined)
+      : undefined;
+
+  return (
+    (body.referenceId as string | undefined) ??
+    (query.referenceId as string | undefined) ??
+    requestQueryReferenceId ??
+    input.fallbackUserId
+  );
+}
+
+export async function authorizeBillingReference(
+  ctx: GenericEndpointContext,
+  options: AnyFlutterwaveOptions,
+  data: {
+    user: User;
+    session: Session;
+    referenceId: string;
+    action: BillingReferenceAction;
+  },
+): Promise<void> {
+  if (data.referenceId === data.user.id) return;
+
+  if (
+    options.subscription?.enabled === true &&
+    typeof options.subscription.authorizeReference === "function"
+  ) {
+    const authorized = await options.subscription.authorizeReference(
+      {
+        user: data.user,
+        session: data.session,
+        referenceId: data.referenceId,
+        action: data.action,
+      },
+      ctx,
+    );
+    if (authorized === true) return;
+    throw new APIError("UNAUTHORIZED");
+  }
+
+  if (options.organization?.enabled === true) {
+    const member = await ctx.context.adapter.findOne({
+      model: "member",
+      where: [
+        { field: "userId", value: data.user.id },
+        { field: "organizationId", value: data.referenceId },
+      ],
+    });
+
+    if (
+      member !== null &&
+      member !== undefined &&
+      hasBillingRole((member as { role?: unknown }).role, getBillingRoles(options))
+    ) {
+      return;
+    }
+  }
+
+  throw new APIError("UNAUTHORIZED");
+}

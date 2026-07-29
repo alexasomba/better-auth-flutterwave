@@ -1,0 +1,6 @@
+interface:
+  display_name: "Better Auth Flutterwave Setup"
+  short_description: "Server and client plugin setup guidance"
+  default_prompt: "Use $better-auth-flutterwave-setup to configure the Better Auth Flutterwave server and client plugins."
+policy:
+  allow_implicit_invocation: true

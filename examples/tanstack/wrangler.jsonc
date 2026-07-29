@@ -1,0 +1,21 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "better-auth-flutterwave",
+  "compatibility_date": "2026-02-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": "@tanstack/react-start/server-entry",
+  "vars": {
+    "VITE_BETTER_AUTH_URL": "https://better-auth-flutterwave.gittech.workers.dev",
+    "BETTER_AUTH_URL": "https://better-auth-flutterwave.gittech.workers.dev",
+    "URL": "https://better-auth-flutterwave.gittech.workers.dev",
+  },
+  "observability": {
+    "logs": {
+      "enabled": true,
+      "invocation_logs": true,
+    },
+    "traces": {
+      "enabled": true,
+    },
+  },
+}

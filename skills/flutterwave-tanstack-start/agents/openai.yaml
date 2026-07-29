@@ -1,0 +1,6 @@
+interface:
+  display_name: "Better Auth Flutterwave TanStack Start"
+  short_description: "TanStack Start integration patterns"
+  default_prompt: "Use $flutterwave-tanstack-start to integrate Better Auth Flutterwave in a TanStack Start application."
+policy:
+  allow_implicit_invocation: true

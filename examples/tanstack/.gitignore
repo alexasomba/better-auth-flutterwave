@@ -1,0 +1,17 @@
+node_modules
+.DS_Store
+dist
+dist-ssr
+*.local
+count.txt
+.env
+.nitro
+.tanstack
+.wrangler
+.output
+.vinxi
+todos.json
+.dev.vars
+
+# Agent skills from npm packages (managed by skills-npm)
+**/skills/npm-*

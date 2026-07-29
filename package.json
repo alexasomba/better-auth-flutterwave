@@ -1,0 +1,122 @@
+{
+  "name": "@alexasomba/better-auth-flutterwave",
+  "version": "0.1.0",
+  "description": "Production-ready Flutterwave billing plugin for Better Auth. Supports subscriptions, one-time payments, organization billing, secure webhooks and more",
+  "keywords": [
+    "africa",
+    "auth",
+    "better-auth",
+    "billing-system",
+    "checkout",
+    "cote-divoire",
+    "egp",
+    "egypt",
+    "fintech",
+    "flutterwave",
+    "ghana",
+    "ghs",
+    "ivory-coast",
+    "kenya",
+    "kes",
+    "ngn",
+    "nigeria",
+    "rwanda",
+    "saas",
+    "south-africa",
+    "subscriptions",
+    "tanstack-intent",
+    "usd",
+    "zar"
+  ],
+  "homepage": "https://github.com/alexasomba/better-auth-flutterwave#readme",
+  "bugs": {
+    "url": "https://github.com/alexasomba/better-auth-flutterwave/issues"
+  },
+  "license": "MIT",
+  "author": "alexasomba",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/alexasomba/better-auth-flutterwave.git"
+  },
+  "funding": [
+    {
+      "type": "individual",
+      "url": "https://solscan.io/account/Gepby394bBBn4AEKkSwAPVnjgBULvYTiXBpbZe9CQqSp"
+    }
+  ],
+  "files": [
+    "dist",
+    "skills"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "types": "./dist/index.d.mts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs",
+      "default": "./dist/index.mjs"
+    },
+    "./client": {
+      "types": "./dist/client.d.mts",
+      "import": "./dist/client.mjs",
+      "default": "./dist/client.mjs"
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "vp pack",
+    "dev": "vp pack --watch",
+    "test": "vp test run",
+    "test:integration": "RUN_INTEGRATION_TESTS=1 vp test run",
+    "coverage": "vp test run --coverage",
+    "lint": "vp lint src",
+    "lint:package": "publint run --strict",
+    "lint:types": "node scripts/lint-types-packed.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "skills:install": "skills-npm --cwd examples/tanstack --yes --force",
+    "skills:dry-run": "skills-npm --cwd examples/tanstack --dry-run --yes --agents universal --force"
+  },
+  "dependencies": {
+    "better-call": "catalog:",
+    "defu": "catalog:",
+    "flutterwave-node-v3": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@arethetypeswrong/cli": "catalog:",
+    "@better-fetch/fetch": "catalog:",
+    "@commitlint/cli": "catalog:",
+    "@commitlint/config-conventional": "catalog:",
+    "@eslint/compat": "catalog:",
+    "@eslint/js": "catalog:",
+    "@tanstack/intent": "catalog:",
+    "@types/node": "catalog:",
+    "@typescript-eslint/eslint-plugin": "catalog:",
+    "@typescript-eslint/parser": "catalog:",
+    "@vitest/coverage-v8": "catalog:",
+    "better-auth": "catalog:",
+    "eslint-plugin-import-x": "catalog:",
+    "eslint-plugin-promise": "catalog:",
+    "eslint-plugin-react-hooks": "catalog:",
+    "eslint-plugin-unicorn": "catalog:",
+    "publint": "catalog:",
+    "skills-npm": "catalog:",
+    "typescript": "catalog:",
+    "typescript-eslint": "catalog:",
+    "vite-plus": "catalog:",
+    "vitest": "catalog:"
+  },
+  "peerDependencies": {
+    "better-auth": "catalog:"
+  },
+  "optionalDependencies": {
+    "@rollup/rollup-linux-x64-gnu": "catalog:"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "packageManager": "pnpm@11.8.0"
+}
