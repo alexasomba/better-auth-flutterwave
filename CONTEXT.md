@@ -26,7 +26,8 @@ a token, renewal falls back to hosted checkout and remains pending until verific
 ## Product and plan
 
 Products and inventory are local catalog records. Flutterwave payment plans may be synchronized,
-but the plugin does not claim that Flutterwave has a Paystack-like remote product catalog.
+while products and inventory remain local because Flutterwave does not provide a matching remote
+product catalog.
 
 ## Organization billing
 

@@ -14,7 +14,7 @@ The canonical transaction actions are
 The canonical subscription actions are `authClient.subscription.create`, `.upgrade`, `.cancel`,
 `.restore`, and `.list`.
 
-Use `txRef`, `transactionId`, `flwRef`, `paymentPlanId`, `subscriptionId`, and `subaccountId`;
-do not translate Paystack reference, plan-code, subscription-code, email-token, customer-code, or
-billing-portal concepts. Privileged reconciliation, renewal, refund, and sync operations are not
-browser actions.
+Use `txRef`, `transactionId`, `flwRef`, `paymentPlanId`, `subscriptionId`, and `subaccountId`.
+Do not invent remote customer records, billing portals, or management links that Flutterwave does
+not provide. Privileged reconciliation, renewal, refund, and sync operations are not browser
+actions.

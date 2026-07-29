@@ -15,8 +15,9 @@ Configure `publicKey`, `secretKey`, and the separately managed webhook `secretHa
 `flutterwaveClient` and `fetch` options support dependency injection. Register `flutterwaveClient`
 from the package’s `/client` export in the browser.
 
-Run `npx better-auth migrate` after enabling the plugin. Never add Flutterwave customer fields to a
-user or organization: billing ownership is local and Flutterwave billing identity is an email.
+Run `npx @better-auth/cli generate` after enabling the plugin and apply the generated migration
+with the application's database workflow. Never add Flutterwave customer fields to a user or
+organization: billing ownership is local and Flutterwave billing identity is an email.
 
 The upstream SDK is untyped CommonJS, performs always-on telemetry, and may use an OS temporary
 file. The plugin’s validated adapter uses Promise APIs only.

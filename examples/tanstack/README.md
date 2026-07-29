@@ -36,7 +36,7 @@ plan omits that ID and demonstrates locally orchestrated trials, periods, seats,
 renewals.
 
 Products and inventory in this example are local. Flutterwave does not provide the remote product
-catalog used by the original Paystack example.
+catalog used by the application.
 
 ## Security notes
 

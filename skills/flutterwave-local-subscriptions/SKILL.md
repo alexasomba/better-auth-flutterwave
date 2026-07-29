@@ -15,5 +15,4 @@ not available in the initial release.
 
 Persist reusable Flutterwave payment tokens encrypted with a key derived from the Better Auth
 secret. Never return or log a token. Trusted-server renewal prefers the token; if none exists,
-create hosted checkout and leave renewal pending until verification. Do not describe the token as
-a Paystack authorization code.
+create hosted checkout and leave renewal pending until verification.

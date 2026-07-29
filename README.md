@@ -5,11 +5,6 @@ It supports Flutterwave Standard checkout, verified one-time payments, native pa
 subscriptions, locally managed subscriptions, organization billing, marketplace split payments,
 webhooks, refunds, and reconciliation.
 
-> This project is being adapted from
-> [`@alexasomba/better-auth-paystack`](https://github.com/alexasomba/better-auth-paystack), but its
-> provider boundary follows Flutterwave semantics. Paystack customer, plan, product, authorization,
-> portal, and webhook behavior must not be assumed to exist in Flutterwave.
-
 ## Install
 
 ```bash
@@ -30,10 +25,12 @@ BETTER_AUTH_URL=http://localhost:3000
 
 ```ts
 import { betterAuth } from "better-auth";
+import { organization } from "better-auth/plugins";
 import { flutterwave } from "better-auth-flutterwave";
 
 export const auth = betterAuth({
   plugins: [
+    organization(),
     flutterwave({
       publicKey: process.env.FLUTTERWAVE_PUBLIC_KEY!,
       secretKey: process.env.FLUTTERWAVE_SECRET_KEY!,
@@ -80,29 +77,39 @@ export const authClient = createAuthClient({
 });
 ```
 
-Then generate or migrate the Better Auth schema:
+Then generate the Better Auth schema and apply it with your database migration workflow:
 
 ```bash
-npx better-auth migrate
+npx @better-auth/cli generate
+```
+
+For supported direct-migration setups, you can instead run:
+
+```bash
+npx @better-auth/cli migrate
 ```
 
 ## Checkout and verification
 
-Flutterwave Standard checkout requires an explicit amount, currency, redirect URL, and billing
-email. The plugin generates a unique `txRef`.
+Flutterwave Standard checkout requires an amount, currency, redirect URL, and billing email. The
+browser supplies the amount and currency directly or selects a configured plan/product; the server
+resolves billing email from the authenticated user or authorized organization owner. The plugin
+generates a unique `txRef`.
 
 ```ts
-const checkout = await authClient.flutterwave.transaction.initialize({
-  amount: 5_000,
-  currency: "NGN",
-  email: session.user.email,
-  redirectUrl: `${window.location.origin}/billing/flutterwave/callback`,
-});
+const checkout = await authClient.flutterwave.transaction.initialize(
+  {
+    amount: 5_000,
+    currency: "NGN",
+    redirectUrl: `${window.location.origin}/billing/flutterwave/callback`,
+  },
+  { throw: true },
+);
 
-window.location.assign(checkout.data.link);
+window.location.assign(checkout.url);
 ```
 
-After redirect, send the transaction ID and expected reference to the verification action:
+After redirect, send exactly one transaction locator to the verification action:
 
 ```ts
 await authClient.flutterwave.transaction.verify({
@@ -166,6 +173,89 @@ Do not parse and reserialize the request before signature verification. Do not u
 
 Polling and reconciliation are provided for pending transactions, subscriptions, and refunds, so
 correctness does not depend on webhook delivery.
+
+## Trusted server operations
+
+Privileged operations are exported from the server entry point:
+
+```ts
+import {
+  chargeSubscriptionRenewal,
+  reconcileFlutterwaveRefunds,
+  reconcileFlutterwaveTransaction,
+  refundFlutterwaveTransaction,
+  syncFlutterwavePlans,
+} from "better-auth-flutterwave";
+```
+
+They require a trusted Better Auth endpoint context plus the same Flutterwave options used by the
+plugin. Call them only from independently authorized server routes, queue consumers, or scheduled
+jobs:
+
+- `syncFlutterwavePlans` imports remote Flutterwave payment plans into namespaced local records.
+- `chargeSubscriptionRenewal` uses an encrypted reusable token when available, otherwise returns a
+  hosted-checkout URL and leaves renewal pending.
+- `refundFlutterwaveTransaction` starts a full or partial asynchronous refund.
+- `reconcileFlutterwaveTransaction` polls and verifies a pending transaction.
+- `reconcileFlutterwaveRefunds` refreshes pending refund records.
+
+## Packaged agent skills
+
+The npm package ships version-matched coding-agent skills in its `skills/` directory. They help an
+agent implement the supported Flutterwave API, data model, security rules, and examples without
+guessing provider behavior.
+
+Install the skill linker in your application and run its one-time setup:
+
+```bash
+npm install --save-dev skills-npm
+npx skills-npm setup
+```
+
+`skills-npm setup` adds a `prepare` hook and links skills from installed npm packages into the
+locations detected for Codex, Claude Code, Cursor, and other supported agents. To select only this
+package, create:
+
+```ts
+// skills-npm.config.ts
+import { defineConfig } from "skills-npm";
+
+export default defineConfig({
+  include: ["better-auth-flutterwave"],
+});
+```
+
+Refresh the links with `npx skills-npm --force`, or preview changes with
+`npx skills-npm --dry-run`.
+
+| Skill                               | Use it for                                               |
+| ----------------------------------- | -------------------------------------------------------- |
+| `$better-auth-flutterwave-setup`    | Initial server/client setup, credentials, and migrations |
+| `$flutterwave-billing-flows`        | Checkout, verification, and subscription flows           |
+| `$flutterwave-client-api`           | Typed browser actions and client/server boundaries       |
+| `$flutterwave-local-subscriptions`  | Encrypted token renewal and hosted-checkout fallback     |
+| `$flutterwave-organization-billing` | Organization ownership, roles, and split payments        |
+| `$flutterwave-catalog-limits`       | Plans, local products, inventory, seats, and limits      |
+| `$flutterwave-webhooks-events`      | Webhook signatures, idempotency, and re-verification     |
+| `$flutterwave-schema-migrations`    | Namespaced schema generation and migrations              |
+| `$flutterwave-testing-fixtures`     | Unit, sandbox, webhook, and reconciliation tests         |
+| `$flutterwave-tanstack-start`       | TanStack Start integration                               |
+
+Invoke a skill explicitly in your agent prompt:
+
+```text
+Use $better-auth-flutterwave-setup to add Better Auth Flutterwave to this application.
+```
+
+```text
+Use $flutterwave-webhooks-events to review my webhook route and add signature tests.
+```
+
+```text
+Use $flutterwave-organization-billing to implement organization checkout with allowlisted splits.
+```
+
+Including the `$skill-name` in the prompt is the most portable explicit invocation form.
 
 ## Data model
 

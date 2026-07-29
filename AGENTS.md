@@ -81,7 +81,7 @@ For best practices and reference implementations, research:
 
 ## Flutterwave Guardrails
 
-- Do not translate Paystack concepts by name. Flutterwave has no remotely managed product catalog
+- Do not invent unsupported provider concepts. Flutterwave has no remotely managed product catalog
   or customer-create lifecycle for this plugin.
 - Native subscriptions begin with a card checkout carrying a numeric `paymentPlanId`; they are not
   created through a subscription-create API.
