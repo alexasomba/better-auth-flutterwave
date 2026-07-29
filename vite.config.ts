@@ -4,7 +4,10 @@ const config: UserConfig = defineConfig({
   staged: {
     "*.{js,ts,tsx,vue,svelte}": "vp check --fix",
   },
-  fmt: {},
+  fmt: {
+    // Release Please owns these files and rewrites them at tag creation using its own serializers.
+    ignorePatterns: ["CHANGELOG.md", "_artifacts/skill_tree.yaml"],
+  },
   pack: {
     tsconfig: "./tsconfig.build.json",
     dts: { build: true, incremental: true },
