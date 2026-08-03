@@ -2,6 +2,14 @@
 
 All notable changes to `better-auth-flutterwave` will be documented in this file.
 
+## [0.1.6](https://github.com/alexasomba/better-auth-flutterwave/compare/v0.1.5...v0.1.6) (2026-07-29)
+
+
+### Miscellaneous Chores
+
+* bump workspace dependencies and update package manager configuration ([8119156](https://github.com/alexasomba/better-auth-flutterwave/commit/81191565c458cc81745adb0bf965af70ce744c47))
+* move engines configuration in package.json for better ordering ([b81bd9b](https://github.com/alexasomba/better-auth-flutterwave/commit/b81bd9b8f1e946b12bf6428591cf5c142a8eb4c6))
+
 ## [0.1.5](https://github.com/alexasomba/better-auth-flutterwave/compare/v0.1.4...v0.1.5) (2026-07-29)
 
 
