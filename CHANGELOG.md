@@ -2,6 +2,14 @@
 
 All notable changes to `better-auth-flutterwave` will be documented in this file.
 
+## [0.1.8](https://github.com/alexasomba/better-auth-flutterwave/compare/v0.1.7...v0.1.8) (2026-08-03)
+
+
+### Documentation
+
+* clarify paystack migration status ([545c0a2](https://github.com/alexasomba/better-auth-flutterwave/commit/545c0a2b1df3126007c3be6b65d95d64e8a3eb2f))
+* document provider coexistence ([4c21834](https://github.com/alexasomba/better-auth-flutterwave/commit/4c218347f5a92bd5b873025f7d27f13b761eec38))
+
 ## [0.1.7](https://github.com/alexasomba/better-auth-flutterwave/compare/v0.1.6...v0.1.7) (2026-08-03)
 
 
