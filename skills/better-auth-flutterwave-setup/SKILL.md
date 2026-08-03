@@ -3,7 +3,7 @@ name: better-auth-flutterwave-setup
 description: Set up better-auth-flutterwave with Better Auth and Flutterwave v3.
 metadata:
   library: "better-auth-flutterwave"
-  version: "0.1.6" # x-release-please-version
+  version: "0.1.7" # x-release-please-version
 compatibility: "Node.js >=22; better-auth ^1.6; flutterwave-node-v3 1.4.x"
 ---
 
