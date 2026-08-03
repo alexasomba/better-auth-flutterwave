@@ -268,11 +268,13 @@ Provider-owned records are namespaced so this plugin can coexist with other bill
 - `flutterwaveWebhookEvent`
 - `flutterwaveRefund`
 
-The Paystack plugin follows the same provider-namespaced approach. The two existing plugins can be
-installed in the same Better Auth application because their transaction, subscription, catalog,
-webhook, and refund records are kept in separate tables. Shared application behavior should rely
-on each provider's normalized lifecycle fields and reference authorization rather than assuming
-that either provider exposes the other's customer or subscription identifiers.
+The Paystack plugin is being aligned incrementally with this provider-namespaced approach. Its
+transaction, catalog, and webhook records are provider-namespaced today; its legacy generic
+subscription table remains compatibility-sensitive until the planned migration is released. The
+two existing plugins can still be installed together because Flutterwave's subscription and other
+provider records are namespaced separately. Shared application behavior should rely on each
+provider's normalized lifecycle fields and reference authorization rather than assuming that either
+provider exposes the other's customer or subscription identifiers.
 
 Public identifiers use Flutterwave-native names: `txRef`, `transactionId`, `flwRef`,
 `paymentPlanId`, `subscriptionId`, `secretHash`, and `subaccountId`.
