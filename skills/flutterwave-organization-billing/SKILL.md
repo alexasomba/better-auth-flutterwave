@@ -3,7 +3,7 @@ name: flutterwave-organization-billing
 description: Configure local organization ownership and marketplace splits for Flutterwave billing.
 metadata:
   library: "better-auth-flutterwave"
-  version: "0.1.7" # x-release-please-version
+  version: "0.1.8" # x-release-please-version
 compatibility: "Node.js >=22; better-auth ^1.6"
 ---
 
