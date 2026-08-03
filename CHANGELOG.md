@@ -2,6 +2,14 @@
 
 All notable changes to `better-auth-flutterwave` will be documented in this file.
 
+## [0.1.7](https://github.com/alexasomba/better-auth-flutterwave/compare/v0.1.6...v0.1.7) (2026-08-03)
+
+
+### Miscellaneous Chores
+
+* **deps:** bump eslint-plugin-unicorn from 64.0.0 to 72.0.0 ([#16](https://github.com/alexasomba/better-auth-flutterwave/issues/16)) ([aea24e6](https://github.com/alexasomba/better-auth-flutterwave/commit/aea24e6cd29d31fbf5bce8b04a6771ac1713f7b8))
+* **deps:** bump web-vitals from 5.3.0 to 6.0.1 ([#15](https://github.com/alexasomba/better-auth-flutterwave/issues/15)) ([09ad459](https://github.com/alexasomba/better-auth-flutterwave/commit/09ad45993ca91ea9421ba74d6b7922aececff788))
+
 ## [0.1.6](https://github.com/alexasomba/better-auth-flutterwave/compare/v0.1.5...v0.1.6) (2026-07-29)
 
 
