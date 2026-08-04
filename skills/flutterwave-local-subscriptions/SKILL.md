@@ -3,7 +3,7 @@ name: flutterwave-local-subscriptions
 description: Implement local subscription lifecycle and tokenized Flutterwave renewal.
 metadata:
   library: "better-auth-flutterwave"
-  version: "0.1.8" # x-release-please-version
+  version: "0.1.9" # x-release-please-version
 compatibility: "Node.js >=22; better-auth ^1.6; flutterwave-node-v3 1.4.x"
 ---
 
