@@ -64,6 +64,7 @@ jobs:
           fi
 
           node -e 'const fs = require("node:fs"); const pkg = JSON.parse(fs.readFileSync(process.argv[1], "utf8")); if (pkg.pnpm?.patchedDependencies || pkg.patchedDependencies) { console.error("::error ::Packed package.json contains publish-time patch metadata."); process.exit(1); }' "$PACK_DIR/package.json"
+          node -e 'const fs = require("node:fs"); const pkg = JSON.parse(fs.readFileSync(process.argv[1], "utf8")); if (pkg.devEngines?.packageManager) { console.error("::error ::Packed package.json contains devEngines.packageManager, which prevents npm trusted publishing."); process.exit(1); }' "$PACK_DIR/package.json"
 
       - name: Lint package metadata
         run: pnpm run lint:package
