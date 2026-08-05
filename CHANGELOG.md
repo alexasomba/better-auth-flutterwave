@@ -2,6 +2,14 @@
 
 All notable changes to `better-auth-flutterwave` will be documented in this file.
 
+## [0.1.10](https://github.com/alexasomba/better-auth-flutterwave/compare/v0.1.9...v0.1.10) (2026-08-05)
+
+
+### Miscellaneous Chores
+
+* **deps:** bump @tanstack/devtools-vite from 0.6.1 to 0.8.3 ([#24](https://github.com/alexasomba/better-auth-flutterwave/issues/24)) ([fd575c0](https://github.com/alexasomba/better-auth-flutterwave/commit/fd575c03edf2d5b948be212a23631e3961d99b58))
+* **deps:** bump @tanstack/intent from 0.0.41 to 0.3.6 ([#23](https://github.com/alexasomba/better-auth-flutterwave/issues/23)) ([ab27dc5](https://github.com/alexasomba/better-auth-flutterwave/commit/ab27dc5c991dcb132dd7145032dd32db05e8a07b))
+
 ## [0.1.9](https://github.com/alexasomba/better-auth-flutterwave/compare/v0.1.8...v0.1.9) (2026-08-04)
 
 
