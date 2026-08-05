@@ -254,8 +254,8 @@ catalogs:
       specifier: ^1.161.6
       version: 1.161.6
     '@tanstack/intent':
-      specifier: ^0.0.41
-      version: 0.0.41
+      specifier: ^0.3.6
+      version: 0.3.6
     '@tanstack/react-devtools':
       specifier: ^0.10.5
       version: 0.10.5
@@ -450,7 +450,7 @@ importers:
         version: 10.0.1(eslint@10.8.0(jiti@2.7.0)(supports-color@10.2.2))
       '@tanstack/intent':
         specifier: 'catalog:'
-        version: 0.0.41
+        version: 0.3.6
       '@types/node':
         specifier: 'catalog:'
         version: 24.13.3
@@ -2299,8 +2299,8 @@ packages:
     resolution: {integrity: sha512-79pf/RkhteYZTRgcR4F9kbk84P2N8rugQJswxfIqovlbRiT3yI7eBE+5QorIrZaOKktsgzRlXh1l/du/xpl4iA==}
     engines: {node: '>=20.19'}
 
-  '@tanstack/intent@0.0.41':
-    resolution: {integrity: sha512-Psl+oDiidLvtctswkTQ1P6sQIihwrMLcdfQVfkLpO42oKwxWEr1lodWUHiOG5jFXsGwDDvpUv/WAdlmJF+yGpw==}
+  '@tanstack/intent@0.3.6':
+    resolution: {integrity: sha512-ylew/4T3layUXSfE/SDGUSAi1B3U/wuoNUE0adC3j/s6wzX7omV6e6hAv0WyMC52Inren8kqvwpHj+G/ZBbQHQ==}
     hasBin: true
 
   '@tanstack/pacer-lite@0.1.1':
@@ -5353,11 +5353,6 @@ packages:
   yallist@3.1.1:
     resolution: {integrity: sha512-a4UGQaWPH59mOXUYnAG2ewncQS4i4F43Tv3JoAM+s2VDAmS9NsK8GpDMLrCHPksFT7h3K6TOoUNn2pb7RoXx4g==}
 
-  yaml@2.8.3:
-    resolution: {integrity: sha512-AvbaCLOO2Otw/lW5bmh9d/WEdcDFdQp2Z2ZUH3pX9U2ihyUY0nvLv7J6TrWowklRGPYbB/IuIMfYgxaCPg5Bpg==}
-    engines: {node: '>= 14.6'}
-    hasBin: true
-
   yaml@2.9.0:
     resolution: {integrity: sha512-2AvhNX3mb8zd6Zy7INTtSpl1F15HW6Wnqj0srWlkKLcpYl/gMIMJiyuGq2KeI2YFxUPjdlB+3Lc10seMLtL4cA==}
     engines: {node: '>= 14.6'}
@@ -6750,12 +6745,13 @@ snapshots:
 
   '@tanstack/history@1.162.0': {}
 
-  '@tanstack/intent@0.0.41':
+  '@tanstack/intent@0.3.6':
     dependencies:
       cac: 6.7.14
       jsonc-parser: 3.3.1
       semver: 7.8.5
-      yaml: 2.8.3
+      std-env: 4.2.0
+      yaml: 2.9.0
 
   '@tanstack/pacer-lite@0.1.1': {}
 
@@ -9758,8 +9754,6 @@ snapshots:
   y18n@5.0.8: {}
 
   yallist@3.1.1: {}
-
-  yaml@2.8.3: {}
 
   yaml@2.9.0: {}
 
