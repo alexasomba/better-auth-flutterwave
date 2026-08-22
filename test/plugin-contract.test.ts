@@ -1,5 +1,5 @@
 /* oxlint-disable typescript/require-await */
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { flutterwave } from "../src";
 import { flutterwaveClient } from "../src/client";
 import { decryptPaymentToken, encryptPaymentToken } from "../src/token-crypto";
