@@ -2,6 +2,13 @@
 
 All notable changes to `better-auth-flutterwave` will be documented in this file.
 
+## [0.2.0](https://github.com/alexasomba/better-auth-flutterwave/compare/v0.1.10...v0.2.0) (2026-08-22)
+
+
+### Features
+
+* expand Flutterwave TanStack billing example ([1082e99](https://github.com/alexasomba/better-auth-flutterwave/commit/1082e99fa6c01ebca405c0311658f9094e448526))
+
 ## [0.1.10](https://github.com/alexasomba/better-auth-flutterwave/compare/v0.1.9...v0.1.10) (2026-08-05)
 
 
