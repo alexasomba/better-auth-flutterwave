@@ -2,7 +2,7 @@
 
 This application demonstrates Better Auth sessions, organization authorization, Flutterwave
 Standard checkout, verified transactions, native and local subscriptions, a local product catalog,
-and trusted server operations.
+subscription cancellation/restoration, transaction history, and trusted server operations.
 
 ## Environment
 
@@ -23,13 +23,15 @@ vp dev
 
 ## Demonstrated flow
 
-1. Sign in and choose personal or organization billing.
-2. Initialize checkout with an amount, currency, billing email, and absolute `redirectUrl`.
-3. Flutterwave redirects to `/billing/flutterwave/callback` with `transaction_id`, `tx_ref`, and
+1. Sign in and choose personal or organization billing from the dashboard.
+2. Select a configured plan or local product. Organization checkout can include a seat quantity.
+3. Initialize checkout with an amount, currency, billing email, and absolute `redirectUrl`.
+4. Flutterwave redirects to `/billing/flutterwave/callback` with `transaction_id`, `tx_ref`, and
    `status`.
-4. The callback invokes server verification. UI success is shown only after status, `txRef`,
+5. The callback invokes server verification. UI success is shown only after status, `txRef`,
    amount, and currency match.
-5. Subscription and transaction lists read the persisted, provider-namespaced records.
+6. Subscription cancellation/restoration and transaction lists read the persisted,
+   provider-namespaced records.
 
 A native plan is configured with numeric `paymentPlanId` and starts through card checkout. A local
 plan omits that ID and demonstrates locally orchestrated trials, periods, seats, limits, and
