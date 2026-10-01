@@ -6,7 +6,7 @@ const config: UserConfig = defineConfig({
   },
   fmt: {
     // Release Please owns these files and rewrites them at tag creation using its own serializers.
-    ignorePatterns: ["CHANGELOG.md", "_artifacts/skill_tree.yaml"],
+    ignorePatterns: ["CHANGELOG.md", "_artifacts/skill_tree.yaml", "**/routeTree.gen.ts"],
   },
   pack: {
     tsconfig: "./tsconfig.build.json",
