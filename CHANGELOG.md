@@ -2,6 +2,13 @@
 
 All notable changes to `better-auth-flutterwave` will be documented in this file.
 
+## [0.2.2](https://github.com/alexasomba/better-auth-flutterwave/compare/v0.2.1...v0.2.2) (2026-10-01)
+
+
+### Miscellaneous Chores
+
+* use Intent for TanStack package skills ([#40](https://github.com/alexasomba/better-auth-flutterwave/issues/40)) ([1410436](https://github.com/alexasomba/better-auth-flutterwave/commit/1410436d975fc8d2fef42c0cb84bdb6ef0622a8e))
+
 ## [0.2.1](https://github.com/alexasomba/better-auth-flutterwave/compare/v0.2.0...v0.2.1) (2026-09-09)
 
 
