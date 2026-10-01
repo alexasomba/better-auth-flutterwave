@@ -71,7 +71,7 @@ catalog:
   "typescript-eslint": "^8.65.0"
   "vite": npm:@voidzero-dev/vite-plus-core@0.2.9
   "vite-plus": 0.2.9
-  "vitest": 4.1.10
+  "vitest": 5.0.2
   "web-vitals": "^6.0.1"
   "wrangler": "^4.115.0"
   "zod": "^4.4.3"
