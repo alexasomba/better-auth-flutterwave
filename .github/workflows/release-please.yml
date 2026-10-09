@@ -72,11 +72,7 @@ jobs:
 
       - name: Setup pnpm
         if: ${{ env.release_tag != '' }}
-        uses: pnpm/action-setup@v6
-        with:
-          version: 12.10.1
-          standalone: true
-          run_install: false
+        run: npm install --global pnpm@12.10.1
 
       - name: Install dependencies
         if: ${{ env.release_tag != '' }}
