@@ -13,10 +13,10 @@ import {
   upgradeSubscription,
   verifyTransaction,
   FLUTTERWAVE_ERROR_CODES,
-} from "./routes";
-import { getSchema } from "./schema";
-import { PACKAGE_VERSION } from "./version";
-import type { AnyFlutterwaveOptions, FlutterwaveClientLike, FlutterwaveOptions } from "./types";
+} from "./routes.ts";
+import { getSchema } from "./schema.ts";
+import { PACKAGE_VERSION } from "./version.ts";
+import type { AnyFlutterwaveOptions, FlutterwaveClientLike, FlutterwaveOptions } from "./types.ts";
 
 export {
   createCheckoutMetadata,
@@ -28,23 +28,25 @@ export {
   hasFlutterwaveMetadata,
   parseFlutterwaveMetadata,
   stringifyFlutterwaveMetadata,
-} from "./metadata";
-export type { FlutterwaveMetadata } from "./metadata";
-export { createFlutterwaveAdapter, FlutterwaveAdapterError } from "./flutterwave-sdk";
+} from "./metadata.ts";
+export type { FlutterwaveMetadata } from "./metadata.ts";
+export type { FlutterwaveTokenChargeInput } from "./flutterwave-contracts.ts";
+export { createFlutterwaveAdapter, FlutterwaveAdapterError } from "./flutterwave-sdk.ts";
 export type {
   FlutterwaveAdapter,
   FlutterwaveAdapterOptions,
   FlutterwaveSdkClient,
-} from "./flutterwave-sdk";
-export { decryptPaymentToken, encryptPaymentToken } from "./token-crypto";
-export { checkSeatLimit, checkTeamLimit, getOrganizationEntitlements } from "./limits";
+} from "./flutterwave-sdk.ts";
+export { decryptPaymentToken, encryptPaymentToken } from "./token-crypto.ts";
+export { checkSeatLimit, checkTeamLimit, getOrganizationEntitlements } from "./limits.ts";
 export {
   chargeSubscriptionRenewal,
+  processScheduledFlutterwaveCancellations,
   refundFlutterwaveTransaction,
   syncFlutterwavePlans,
-} from "./operations";
-export { reconcileFlutterwaveRefunds, reconcileFlutterwaveTransaction } from "./reconciliation";
-export type * from "./types";
+} from "./operations.ts";
+export { reconcileFlutterwaveRefunds, reconcileFlutterwaveTransaction } from "./reconciliation.ts";
+export type * from "./types.ts";
 
 declare module "better-auth" {
   interface BetterAuthPluginRegistry<AuthOptions, Options> {

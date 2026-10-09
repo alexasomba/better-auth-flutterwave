@@ -96,6 +96,11 @@ browser supplies the amount and currency directly or selects a configured plan/p
 resolves billing email from the authenticated user or authorized organization owner. The plugin
 generates a unique `txRef`.
 
+For a configured plan or product, its server-side currency and price always take precedence over
+browser overrides. A plan's base amount includes the first seat; each additional seat adds
+`seatAmount`. Product prices are multiplied by `quantity`. Explicit browser amount/currency values
+apply only to a payment without a configured plan or product.
+
 ```ts
 const checkout = await authClient.flutterwave.transaction.initialize(
   {
@@ -168,6 +173,11 @@ configured `secretHash`. It compares signatures in constant time, records idempo
 re-verifies payment transactions before granting value. Keep custom `onEvent` work short so the
 endpoint can acknowledge within Flutterwave's timeout.
 
+Callback and reconciliation failures return a retryable HTTP 503. Webhook processing uses a
+database claim to prevent simultaneous callbacks for the same event, and an abandoned claim can
+be retried after five minutes. `onEvent` must still be idempotent: a crash after its external work
+but before recording completion can cause a later retry to execute it again.
+
 Do not parse and reserialize the request before signature verification. Do not use the API
 `secretKey` as the webhook secret hash.
 
@@ -181,6 +191,7 @@ Privileged operations are exported from the server entry point:
 ```ts
 import {
   chargeSubscriptionRenewal,
+  processScheduledFlutterwaveCancellations,
   reconcileFlutterwaveRefunds,
   reconcileFlutterwaveTransaction,
   refundFlutterwaveTransaction,
@@ -198,6 +209,36 @@ jobs:
 - `refundFlutterwaveTransaction` starts a full or partial asynchronous refund.
 - `reconcileFlutterwaveTransaction` polls and verifies a pending transaction.
 - `reconcileFlutterwaveRefunds` refreshes pending refund records.
+- `processScheduledFlutterwaveCancellations` executes due cancellation requests, canceling native
+  subscriptions through Flutterwave if needed and ending local subscriptions. New native
+  cancellation requests stop provider billing immediately while preserving access until the paid
+  period ends; withdrawing that request reactivates provider billing. Run the processor from your
+  scheduler at period end, inspect returned `failed` IDs, and retry failures. Each
+  invocation processes up to 100 requests by default (maximum 1,000); `hasMore` indicates that
+  another batch may be needed. Scheduling requires a known paid `periodEnd`; legacy records must
+  be reconciled first or canceled immediately.
+
+Cancellation and restoration accept either the local subscription `id` or a numeric Flutterwave
+`subscriptionId`. A scheduled local cancellation can be withdrawn while its paid period is still
+active. A local subscription that has already ended requires a new checkout. Renewal calculates
+the same seat price as checkout and rejects canceled or provider-managed subscriptions.
+
+## Release and downstream updates
+
+Release Please opens the version/change-log PR after reviewed changes reach `main`. Merging that
+release PR creates the version tag and triggers the tag-pinned npm trusted-publishing workflow.
+The npm trusted publisher must reference this repository and `.github/workflows/release-please.yml`.
+The workflow requires Node 24, the locked pnpm version, library tests, a package build, package/type
+lint, and the downstream example/schema checks. A branch push or ordinary application build does
+not publish this package.
+
+Consumers must use a release containing the new scheduled-cancellation export before importing
+it; the previously published 0.2.1 release does not include these changes. The example uses
+`workspace:*` and therefore follows the library in this checkout. External consumers must update
+their dependency and lockfile after publication, review billing schema constraints, and wire the
+processor into their authorized scheduler. See [the persistent example setup](examples/tanstack/README.md)
+for the D1 migration and Cron Trigger configuration. This repository does not automatically
+upgrade or deploy external applications.
 
 ## Packaged agent skills
 

@@ -16,3 +16,12 @@ not available in the initial release.
 Persist reusable Flutterwave payment tokens encrypted with a key derived from the Better Auth
 secret. Never return or log a token. Trusted-server renewal prefers the token; if none exists,
 create hosted checkout and leave renewal pending until verification.
+
+The base price includes the first seat; additional seats add `seatAmount`. Renewals use that same
+formula. Payment verification records stable UTC billing periods; duplicate payments and old
+canceled/superseded subscriptions must not advance periods or replace a newer subscription.
+
+Cancellation accepts a local subscription ID. Period-end cancellation requires a known paid
+`periodEnd` and an independently authorized scheduler calling
+`processScheduledFlutterwaveCancellations`. Inspect its failed IDs and retry provider failures;
+ended local subscriptions require a new checkout before they can become active again.

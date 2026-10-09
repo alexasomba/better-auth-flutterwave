@@ -3,7 +3,9 @@ import { createCloudflareFlutterwaveClient } from "../lib/flutterwave-cloudflare
 
 describe("Cloudflare Flutterwave client", () => {
   it("uses fetch instead of the Node-only SDK for transaction verification", async () => {
-    const fetchMock = vi.fn(async () => Response.json({ status: "success", data: { id: 42 } }));
+    const fetchMock = vi.fn<typeof globalThis.fetch>(async () =>
+      Response.json({ status: "success", data: { id: 42 } }),
+    );
     const client = createCloudflareFlutterwaveClient(
       "test-secret",
       fetchMock as typeof globalThis.fetch,
@@ -16,13 +18,18 @@ describe("Cloudflare Flutterwave client", () => {
     expect(fetchMock).toHaveBeenCalledWith(
       new URL("https://api.flutterwave.com/v3/transactions/42/verify"),
       expect.objectContaining({
-        headers: expect.objectContaining({ authorization: "Bearer test-secret" }),
+        headers: expect.any(Headers),
       }),
+    );
+    expect(new Headers(fetchMock.mock.calls[0]?.[1]?.headers).get("authorization")).toBe(
+      "Bearer test-secret",
     );
   });
 
   it("forwards reference verification as a query parameter", async () => {
-    const fetchMock = vi.fn(async () => Response.json({ status: "success", data: {} }));
+    const fetchMock = vi.fn<typeof globalThis.fetch>(async () =>
+      Response.json({ status: "success", data: {} }),
+    );
     const client = createCloudflareFlutterwaveClient(
       "test-secret",
       fetchMock as typeof globalThis.fetch,
@@ -31,7 +38,8 @@ describe("Cloudflare Flutterwave client", () => {
     await client.Transaction.verify_by_tx({ tx_ref: "tx-demo" });
 
     const [url] = fetchMock.mock.calls[0] ?? [];
-    expect(String(url)).toBe(
+    const requestUrl = url instanceof URL ? url.href : typeof url === "string" ? url : url?.url;
+    expect(requestUrl).toBe(
       "https://api.flutterwave.com/v3/transactions/verify_by_reference?tx_ref=tx-demo",
     );
   });

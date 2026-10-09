@@ -1,11 +1,11 @@
 /* oxlint-disable typescript/require-await */
 import { describe, expect, it } from "vite-plus/test";
-import { flutterwave } from "../src";
-import { flutterwaveClient } from "../src/client";
-import { decryptPaymentToken, encryptPaymentToken } from "../src/token-crypto";
-import { flutterwavePluginSchema } from "../src/schema";
-import { hmacSha256Base64, timingSafeEqualString } from "../src/route-modules/shared";
-import type { FlutterwaveSdkClient } from "../src/flutterwave-sdk";
+import { flutterwave } from "../src/index.ts";
+import { flutterwaveClient } from "../src/client.ts";
+import { decryptPaymentToken, encryptPaymentToken } from "../src/token-crypto.ts";
+import { flutterwavePluginSchema } from "../src/schema.ts";
+import { hmacSha256Base64, timingSafeEqualString } from "../src/route-modules/shared.ts";
+import type { FlutterwaveSdkClient } from "../src/flutterwave-sdk.ts";
 
 const mockClient: FlutterwaveSdkClient = {
   Transaction: {

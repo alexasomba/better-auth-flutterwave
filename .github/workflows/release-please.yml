@@ -39,8 +39,10 @@ jobs:
       - name: Resolve release tag
         if: ${{ steps.release.outputs.release_created == 'true' || inputs.release_tag != '' }}
         shell: bash
+        env:
+          REQUESTED_TAG: ${{ inputs.release_tag || steps.release.outputs.tag_name }}
         run: |
-          TAG="${{ inputs.release_tag || steps.release.outputs.tag_name }}"
+          TAG="$REQUESTED_TAG"
           if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "::error ::Release Please returned unexpected tag '$TAG'. Expected vX.Y.Z."
             exit 1
@@ -82,11 +84,24 @@ jobs:
 
       - name: Test
         if: ${{ env.release_tag != '' }}
-        run: pnpm exec vp test
+        run: pnpm exec vp test run
 
       - name: Build package
         if: ${{ env.release_tag != '' }}
         run: pnpm exec vp pack
+
+      - name: Validate package metadata and types
+        if: ${{ env.release_tag != '' }}
+        run: |
+          pnpm exec vp run lint:package
+          pnpm exec vp run lint:types
+
+      - name: Validate downstream example and billing schema
+        if: ${{ env.release_tag != '' }}
+        run: |
+          pnpm --dir examples/tanstack run db:billing:check
+          pnpm --dir examples/tanstack run check:ci
+          pnpm --dir examples/tanstack run test
 
       - name: Pack and inspect release tarball
         if: ${{ env.release_tag != '' }}

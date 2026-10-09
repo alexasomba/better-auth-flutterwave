@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
-import { createFlutterwaveAdapter } from "../src/flutterwave-sdk";
+import { createFlutterwaveAdapter } from "../src/flutterwave-sdk.ts";
 
 const publicKey = process.env.FLUTTERWAVE_PUBLIC_KEY;
 const secretKey = process.env.FLUTTERWAVE_SECRET_KEY;

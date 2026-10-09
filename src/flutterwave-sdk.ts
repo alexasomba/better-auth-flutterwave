@@ -17,7 +17,7 @@ import {
   type FlutterwaveTokenChargeInput,
   type FlutterwaveTransactionData,
   type StandardCheckoutInput,
-} from "./flutterwave-contracts";
+} from "./flutterwave-contracts.ts";
 
 type SdkResult = Promise<unknown>;
 
@@ -160,7 +160,10 @@ export function createFlutterwaveAdapter(options: FlutterwaveAdapterOptions): Fl
 
   const client = options.flutterwaveClient ?? createSdkClient(options.publicKey, options.secretKey);
   const fetchImpl = options.fetch ?? globalThis.fetch;
-  const apiBaseUrl = (options.apiBaseUrl ?? "https://api.flutterwave.com").replace(/\/+$/, "");
+  const configuredApiBaseUrl = options.apiBaseUrl ?? "https://api.flutterwave.com";
+  let end = configuredApiBaseUrl.length;
+  while (end > 0 && configuredApiBaseUrl.charCodeAt(end - 1) === 47) end--;
+  const apiBaseUrl = configuredApiBaseUrl.slice(0, end);
 
   return {
     async initializePayment(input) {

@@ -66,7 +66,7 @@ export default function OrganizationManager() {
           setActiveOrg(result.data[0] as Organization);
         }
       }
-    } catch (_) {
+    } catch {
       // Silently fail
     } finally {
       setLoading(false);
@@ -81,7 +81,7 @@ export default function OrganizationManager() {
       if (result.data?.members !== null && result.data?.members !== undefined) {
         setMembers(result.data.members as Member[]);
       }
-    } catch (_) {
+    } catch {
       // Silently fail
     }
   }, []);

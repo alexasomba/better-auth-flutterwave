@@ -3,7 +3,7 @@ import type { RawError } from "better-auth";
 import { timingSafeEqual } from "node:crypto";
 import { Buffer as NodeBuffer } from "node:buffer";
 
-import type { AnyFlutterwaveOptions, FlutterwaveCheckoutChannel } from "../types";
+import type { AnyFlutterwaveOptions, FlutterwaveCheckoutChannel } from "../types.ts";
 
 export const FLUTTERWAVE_ERROR_CODES: {
   SUBSCRIPTION_NOT_FOUND: RawError<"SUBSCRIPTION_NOT_FOUND">;

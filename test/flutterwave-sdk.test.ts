@@ -4,7 +4,7 @@ import {
   createFlutterwaveAdapter,
   FlutterwaveAdapterError,
   type FlutterwaveSdkClient,
-} from "../src/flutterwave-sdk";
+} from "../src/flutterwave-sdk.ts";
 
 const transaction = {
   id: 42,
@@ -75,6 +75,60 @@ function adapter(client = mockClient(), fetch = vi.fn()) {
 }
 
 describe("Flutterwave provider adapter", () => {
+  it.each([
+    ["https://api.example.test", "https://api.example.test/v3/payments"],
+    ["https://api.example.test/", "https://api.example.test/v3/payments"],
+    ["https://api.example.test////", "https://api.example.test/v3/payments"],
+    ["https://api.example.test//gateway///", "https://api.example.test//gateway/v3/payments"],
+  ])("normalizes only trailing slashes in %s", async (apiBaseUrl, expectedUrl) => {
+    const fetch = vi
+      .fn()
+      .mockResolvedValue(
+        Response.json({ status: "success", data: { link: "https://checkout.example.test/pay" } }),
+      );
+    const flutterwave = createFlutterwaveAdapter({
+      publicKey: "FLWPUBK_TEST",
+      secretKey: "FLWSECK_TEST",
+      flutterwaveClient: mockClient(),
+      fetch,
+      apiBaseUrl,
+    });
+    await flutterwave.initializePayment({
+      tx_ref: "better-auth_123",
+      amount: 2500,
+      currency: "NGN",
+      redirect_url: "https://example.com/billing/callback",
+      customer: { email: "customer@example.com" },
+    });
+    expect(fetch).toHaveBeenCalledWith(expectedUrl, expect.any(Object));
+  });
+
+  it("handles long interior and trailing slash runs without blocking", async () => {
+    const interior = `https://api.example.test/${"/".repeat(100_000)}gateway`;
+    const fetch = vi
+      .fn()
+      .mockResolvedValue(
+        Response.json({ status: "success", data: { link: "https://checkout.example.test/pay" } }),
+      );
+    const startedAt = performance.now();
+    const flutterwave = createFlutterwaveAdapter({
+      publicKey: "FLWPUBK_TEST",
+      secretKey: "FLWSECK_TEST",
+      flutterwaveClient: mockClient(),
+      fetch,
+      apiBaseUrl: `${interior}${"/".repeat(100_000)}`,
+    });
+    expect(performance.now() - startedAt).toBeLessThan(1500);
+    await flutterwave.initializePayment({
+      tx_ref: "better-auth_123",
+      amount: 2500,
+      currency: "NGN",
+      redirect_url: "https://example.com/billing/callback",
+      customer: { email: "customer@example.com" },
+    });
+    expect(fetch).toHaveBeenCalledWith(`${interior}/v3/payments`, expect.any(Object));
+  });
+
   it("initializes Standard checkout with bearer authentication", async () => {
     const fetch = vi.fn().mockResolvedValue(
       new Response(

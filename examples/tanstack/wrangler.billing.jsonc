@@ -1,0 +1,23 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "better-auth-flutterwave-billing",
+  "main": "src/server.ts",
+  "compatibility_date": "2026-02-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "vars": {
+    "VITE_BETTER_AUTH_URL": "http://localhost:3000",
+    "BETTER_AUTH_URL": "http://localhost:3000",
+    "URL": "http://localhost:3000",
+  },
+  "d1_databases": [
+    {
+      "binding": "BILLING_DB",
+      "database_name": "better-auth-flutterwave-billing",
+      // Local-only placeholder. Replace with the actual D1 ID before deploying.
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "migrations",
+    },
+  ],
+  "triggers": { "crons": ["*/5 * * * *"] },
+  "observability": { "logs": { "enabled": true } },
+}

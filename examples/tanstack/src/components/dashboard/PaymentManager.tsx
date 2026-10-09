@@ -108,16 +108,18 @@ export default function PaymentManager({ activeTab }: { activeTab: "subscription
   }
 
   async function updateSubscription(subscription: Subscription, action: "cancel" | "restore") {
-    const subscriptionId = subscription.subscriptionId;
-    if (subscriptionId === undefined || subscriptionId === null) return;
+    const subscriptionId = subscription.subscriptionId ?? subscription.id;
     setBusyKey(`${action}-${subscription.id}`);
     setMessage(null);
     try {
       if (action === "cancel") {
-        await subscriptionActions.cancel({ subscriptionId, atPeriodEnd: true }, { throw: true });
+        const atPeriodEnd = subscription.periodEnd !== undefined && subscription.periodEnd !== null;
+        await subscriptionActions.cancel({ subscriptionId, atPeriodEnd }, { throw: true });
         setMessage({
           tone: "success",
-          text: `${subscription.plan} will cancel at the end of its period.`,
+          text: atPeriodEnd
+            ? `${subscription.plan} will cancel at the end of its period.`
+            : `${subscription.plan} subscription canceled.`,
         });
       } else {
         await subscriptionActions.restore({ subscriptionId }, { throw: true });
@@ -220,8 +222,7 @@ export default function PaymentManager({ activeTab }: { activeTab: "subscription
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge variant="outline">{subscription.status}</Badge>
-                    {subscription.subscriptionId !== undefined &&
-                      subscription.subscriptionId !== null &&
+                    {["active", "trialing", "past_due"].includes(subscription.status) &&
                       (subscription.cancelAtPeriodEnd ? (
                         <Button
                           variant="outline"
@@ -238,7 +239,9 @@ export default function PaymentManager({ activeTab }: { activeTab: "subscription
                         >
                           {busyKey === `cancel-${subscription.id}`
                             ? "Canceling…"
-                            : "Cancel at period end"}
+                            : subscription.periodEnd
+                              ? "Cancel at period end"
+                              : "Cancel now"}
                         </Button>
                       ))}
                   </div>

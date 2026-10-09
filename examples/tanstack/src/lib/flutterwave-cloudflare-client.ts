@@ -14,18 +14,21 @@ export function createCloudflareFlutterwaveClient(
   ): Promise<unknown> => {
     const url = new URL(`${apiBaseUrl.replace(/\/+$/, "")}/${path.replace(/^\/+/, "")}`);
     for (const [key, value] of Object.entries(query ?? {})) {
-      if (value !== undefined && value !== null && value !== "") {
+      if (
+        (typeof value === "string" && value !== "") ||
+        typeof value === "number" ||
+        typeof value === "boolean"
+      ) {
         url.searchParams.set(key, String(value));
       }
     }
 
+    const headers = new Headers(init?.headers);
+    headers.set("authorization", `Bearer ${secretKey}`);
+    headers.set("content-type", "application/json");
     const response = await fetchImpl(url, {
       ...init,
-      headers: {
-        authorization: `Bearer ${secretKey}`,
-        "content-type": "application/json",
-        ...init?.headers,
-      },
+      headers,
     });
     const body: unknown = await response.json();
     if (!response.ok) {

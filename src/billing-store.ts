@@ -11,10 +11,13 @@ import type {
   Member,
   Organization,
   User,
-} from "./types";
+} from "./types.ts";
 
-type Adapter = GenericEndpointContext["context"]["adapter"];
-type WhereValue = string | number | boolean | null;
+export type BillingStoreAdapter = Pick<
+  GenericEndpointContext["context"]["adapter"],
+  "create" | "findOne" | "findMany" | "update" | "updateMany"
+>;
+type WhereValue = string | number | boolean | Date | null;
 type WhereClause = { field: string; value: WhereValue }[];
 
 export interface BillingStore {
@@ -31,6 +34,8 @@ export interface BillingStore {
     exceptId: string,
   ): Promise<void>;
   findSubscriptionsByTxRef(txRef: string): Promise<FlutterwaveSubscription[]>;
+  listDueCancellations(now: Date, limit: number): Promise<FlutterwaveSubscription[]>;
+  completeScheduledCancellation(subscription: FlutterwaveSubscription, now: Date): Promise<boolean>;
   createSubscription(
     data: Partial<FlutterwaveSubscription> & Record<string, unknown>,
   ): Promise<FlutterwaveSubscription>;
@@ -38,6 +43,10 @@ export interface BillingStore {
     id: string,
     update: Partial<FlutterwaveSubscription> & Record<string, unknown>,
   ): Promise<FlutterwaveSubscription | null>;
+  updateCurrentSubscription(
+    subscription: FlutterwaveSubscription,
+    update: Partial<FlutterwaveSubscription> & Record<string, unknown>,
+  ): Promise<boolean>;
   updateSubscriptionByProviderId(
     subscriptionId: number,
     update: Partial<FlutterwaveSubscription> & Record<string, unknown>,
@@ -78,6 +87,7 @@ export interface BillingStore {
     eventId: string,
     update: Partial<FlutterwaveWebhookEventRecord> & Record<string, unknown>,
   ): Promise<FlutterwaveWebhookEventRecord | null>;
+  claimWebhookEvent(event: FlutterwaveWebhookEventRecord, now: Date): Promise<boolean>;
   createRefund(
     data: Partial<FlutterwaveRefund> & Record<string, unknown>,
   ): Promise<FlutterwaveRefund>;
@@ -112,11 +122,13 @@ function sortSubscriptionsForCurrent(
   });
 }
 
-export function createBillingStore(ctx: GenericEndpointContext): BillingStore {
+export function createBillingStore(ctx: {
+  context: { adapter: BillingStoreAdapter };
+}): BillingStore {
   return createBillingStoreFromAdapter(ctx.context.adapter);
 }
 
-export function createBillingStoreFromAdapter(adapter: Adapter): BillingStore {
+export function createBillingStoreFromAdapter(adapter: BillingStoreAdapter): BillingStore {
   const findOne = async <T>(model: string, where: WhereClause): Promise<T | null> =>
     (await adapter.findOne<T>({ model, where })) ?? null;
   const findMany = async <T>(model: string, where?: WhereClause): Promise<T[]> =>
@@ -142,6 +154,8 @@ export function createBillingStoreFromAdapter(adapter: Adapter): BillingStore {
     },
     async retireCompetingSubscriptions(referenceId, groupId, exceptId) {
       const candidates = await this.findSubscriptionsByReference(referenceId);
+      const current = candidates.find(({ id }) => id === exceptId);
+      if (!current) return;
       const now = new Date();
       for (const candidate of candidates) {
         const sameGroup =
@@ -152,8 +166,9 @@ export function createBillingStoreFromAdapter(adapter: Adapter): BillingStore {
             : candidate.groupId === groupId;
         if (
           candidate.id !== exceptId &&
+          new Date(candidate.createdAt).getTime() <= new Date(current.createdAt).getTime() &&
           sameGroup &&
-          (candidate.status === "active" || candidate.status === "trialing")
+          ["active", "trialing", "incomplete", "past_due"].includes(candidate.status)
         ) {
           await this.updateSubscription(candidate.id, {
             status: "canceled",
@@ -167,6 +182,37 @@ export function createBillingStoreFromAdapter(adapter: Adapter): BillingStore {
     },
     findSubscriptionsByTxRef: (txRef) =>
       findMany("flutterwaveSubscription", [{ field: "txRef", value: txRef }]),
+    listDueCancellations: (now, limit) =>
+      adapter.findMany({
+        model: "flutterwaveSubscription",
+        where: [
+          { field: "cancelAtPeriodEnd", value: true },
+          { field: "cancelAt", value: now, operator: "lte" },
+        ],
+        sortBy: { field: "cancelAt", direction: "asc" },
+        limit,
+      }),
+    async completeScheduledCancellation(subscription, now) {
+      const count = await adapter.updateMany({
+        model: "flutterwaveSubscription",
+        where: [
+          { field: "id", value: subscription.id },
+          { field: "cancelAtPeriodEnd", value: true },
+          {
+            field: "cancelAt",
+            value: subscription.cancelAt == null ? null : new Date(subscription.cancelAt),
+          },
+        ],
+        update: {
+          status: "canceled",
+          cancelAtPeriodEnd: false,
+          canceledAt: subscription.canceledAt ?? now,
+          endedAt: subscription.cancelAt ?? now,
+          updatedAt: now,
+        },
+      });
+      return count === 1;
+    },
     createSubscription: (data) =>
       adapter.create({
         model: "flutterwaveSubscription",
@@ -178,6 +224,18 @@ export function createBillingStoreFromAdapter(adapter: Adapter): BillingStore {
         update,
         where: [{ field: "id", value: id }],
       }),
+    async updateCurrentSubscription(subscription, update) {
+      const count = await adapter.updateMany({
+        model: "flutterwaveSubscription",
+        where: [
+          { field: "id", value: subscription.id },
+          { field: "status", value: subscription.status },
+          { field: "txRef", value: subscription.txRef ?? null },
+        ],
+        update,
+      });
+      return count === 1;
+    },
     updateSubscriptionByProviderId: (subscriptionId, update) =>
       adapter.update({
         model: "flutterwaveSubscription",
@@ -256,6 +314,18 @@ export function createBillingStoreFromAdapter(adapter: Adapter): BillingStore {
         update,
         where: [{ field: "eventId", value: eventId }],
       }),
+    async claimWebhookEvent(event, now) {
+      const claimed = await adapter.updateMany({
+        model: "flutterwaveWebhookEvent",
+        where: [
+          { field: "eventId", value: event.eventId },
+          { field: "status", value: event.status },
+          { field: "updatedAt", value: new Date(event.updatedAt) },
+        ],
+        update: { status: "processing", updatedAt: now },
+      });
+      return claimed === 1;
+    },
     createRefund: (data) =>
       adapter.create({ model: "flutterwaveRefund", data }) as Promise<FlutterwaveRefund>,
     findRefundByProviderId: (refundId) =>

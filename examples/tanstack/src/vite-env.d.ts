@@ -9,7 +9,7 @@ interface WebMcpTool {
   name: string;
   description: string;
   inputSchema: Record<string, unknown>;
-  execute: (input?: unknown) => unknown | Promise<unknown>;
+  execute: (input?: unknown) => unknown;
 }
 
 interface Navigator {

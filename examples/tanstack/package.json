@@ -21,6 +21,11 @@
     "check:ci": "prettier --check . && vp lint --no-error-on-unmatched-pattern",
     "deploy": "npm run build && wrangler deploy",
     "wrangler:dry-run": "wrangler deploy --dry-run",
+    "dev:billing": "BILLING_PERSISTENT=1 vp dev --port 3000",
+    "build:billing": "BILLING_PERSISTENT=1 vp build",
+    "db:billing:generate": "tsx scripts/generate-billing-schema.ts",
+    "db:billing:check": "tsx scripts/generate-billing-schema.ts --check",
+    "db:billing:migrate:local": "wrangler d1 migrations apply BILLING_DB --local --config wrangler.billing.jsonc",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
@@ -55,6 +60,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "catalog:",
     "@playwright/test": "catalog:",
     "@tanstack/devtools-vite": "catalog:",
     "@tanstack/eslint-config": "catalog:",

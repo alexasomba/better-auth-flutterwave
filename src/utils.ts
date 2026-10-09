@@ -6,12 +6,16 @@ import type {
   FlutterwavePlan,
   FlutterwaveProduct,
   Subscription,
-} from "./types";
-import { createBillingStore } from "./billing-store";
+} from "./types.ts";
+import { createBillingStore } from "./billing-store.ts";
 
 export function getPlanSeatAmount(plan: FlutterwavePlan): number | undefined {
   if (plan.seatAmount !== undefined) {
-    if (typeof plan.seatAmount === "number" && Number.isFinite(plan.seatAmount)) {
+    if (
+      typeof plan.seatAmount === "number" &&
+      Number.isFinite(plan.seatAmount) &&
+      plan.seatAmount >= 0
+    ) {
       return plan.seatAmount;
     }
     throw new Error(`Invalid seatAmount for plan '${plan.name}'. Expected a finite number.`);
@@ -22,7 +26,7 @@ export function getPlanSeatAmount(plan: FlutterwavePlan): number | undefined {
   }
 
   const parsed = typeof plan.seatPriceId === "string" ? Number(plan.seatPriceId) : plan.seatPriceId;
-  if (typeof parsed === "number" && Number.isFinite(parsed)) {
+  if (typeof parsed === "number" && Number.isFinite(parsed) && parsed >= 0) {
     return parsed;
   }
 
@@ -32,7 +36,7 @@ export function getPlanSeatAmount(plan: FlutterwavePlan): number | undefined {
 }
 
 export function calculatePlanAmount(plan: FlutterwavePlan, quantity: number): number {
-  return (plan.amount ?? 0) + quantity * (getPlanSeatAmount(plan) ?? 0);
+  return (plan.amount ?? 0) + Math.max(0, quantity - 1) * (getPlanSeatAmount(plan) ?? 0);
 }
 
 export function normalizeSubscriptionGroup(group: string | undefined | null): string | null {
@@ -65,7 +69,7 @@ export async function getPlans(
       ? subscriptionOptions.plans()
       : subscriptionOptions.plans;
   }
-  throw new Error("Subscriptions are not enabled in the Flutterwave options.");
+  return [];
 }
 
 export const getPlan: (
@@ -131,30 +135,53 @@ export async function getProductByName(
   );
 }
 
-export function getNextPeriodEnd(startDate: Date, interval: string): Date {
+export function getNextPeriodEnd(startDate: Date, interval: string): Date | null {
   const date = new Date(startDate);
+  const day = date.getUTCDate();
+  const addMonths = (months: number) => {
+    date.setUTCDate(1);
+    date.setUTCMonth(date.getUTCMonth() + months);
+    const lastDay = new Date(
+      Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 0),
+    ).getUTCDate();
+    date.setUTCDate(Math.min(day, lastDay));
+  };
   switch (interval) {
+    case "hourly":
+      date.setUTCHours(date.getUTCHours() + 1);
+      break;
     case "daily":
-      date.setDate(date.getDate() + 1);
+      date.setUTCDate(date.getUTCDate() + 1);
       break;
     case "weekly":
-      date.setDate(date.getDate() + 7);
+      date.setUTCDate(date.getUTCDate() + 7);
       break;
     case "monthly":
-      date.setMonth(date.getMonth() + 1);
+      addMonths(1);
       break;
     case "quarterly":
-      date.setMonth(date.getMonth() + 3);
+      addMonths(3);
       break;
     case "biannually":
-      date.setMonth(date.getMonth() + 6);
+    case "bi-annually":
+      addMonths(6);
       break;
     case "annually":
-      date.setFullYear(date.getFullYear() + 1);
+    case "yearly":
+      addMonths(12);
       break;
-    default:
-      // Default to monthly if unknown
-      date.setMonth(date.getMonth() + 1);
+    default: {
+      const recurring = /^every (\d+) (hours?|days?|weeks?|months?|years?)$/.exec(interval);
+      if (!recurring) return null;
+      const count = Number(recurring[1]);
+      if (!Number.isSafeInteger(count) || count < 1) return null;
+      const unit = recurring[2];
+      if (unit?.startsWith("hour")) date.setUTCHours(date.getUTCHours() + count);
+      else if (unit?.startsWith("day")) date.setUTCDate(date.getUTCDate() + count);
+      else if (unit?.startsWith("week")) date.setUTCDate(date.getUTCDate() + count * 7);
+      else addMonths(count * (unit?.startsWith("year") ? 12 : 1));
+      if (!Number.isFinite(date.getTime())) return null;
+    }
   }
   return date;
 }

@@ -21,7 +21,13 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
-    "types": ["node", "react", "react-dom", "@testing-library/jest-dom"],
+    "types": [
+      "node",
+      "react",
+      "react-dom",
+      "@testing-library/jest-dom",
+      "@cloudflare/workers-types"
+    ],
     "paths": {
       "@/*": ["./src/*"],
       "better-auth-flutterwave": ["../../src/index.ts"],

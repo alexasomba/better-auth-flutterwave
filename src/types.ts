@@ -1,7 +1,7 @@
 import type { GenericEndpointContext, InferOptionSchema, Session, User } from "better-auth";
 import type { Member, Organization } from "better-auth/plugins/organization";
-import type { FlutterwavePluginSchema } from "./schema";
-import type { FlutterwaveSdkClient } from "./flutterwave-sdk";
+import type { FlutterwavePluginSchema } from "./schema.ts";
+import type { FlutterwaveSdkClient } from "./flutterwave-sdk.ts";
 
 export type { Member, Organization, Session, User };
 

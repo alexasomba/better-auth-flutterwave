@@ -15,3 +15,8 @@ it to `flutterwave-signature` in constant time, persist idempotency, and acknowl
 Re-verify transactions before granting value. Expect duplicate, delayed, and out-of-order events.
 Use polling/reconciliation for pending transactions, subscriptions, and refunds. Never substitute
 the API secret key for `secretHash` or reserialize JSON before signature verification.
+
+The handler records completion only after reconciliation and `onEvent` succeed. Failures and busy
+claims return HTTP 503 so delivery can be retried; abandoned claims can be reclaimed after five
+minutes. Application callbacks must be idempotent because delivery is at least once, including a
+crash after external work succeeds but before its completion is persisted.
