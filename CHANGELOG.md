@@ -2,6 +2,13 @@
 
 All notable changes to `better-auth-flutterwave` will be documented in this file.
 
+## [0.3.1](https://github.com/alexasomba/better-auth-flutterwave/compare/v0.3.0...v0.3.1) (2026-10-09)
+
+
+### Bug Fixes
+
+* install pnpm directly in release workflow ([#46](https://github.com/alexasomba/better-auth-flutterwave/issues/46)) ([b40ac49](https://github.com/alexasomba/better-auth-flutterwave/commit/b40ac4937a124be6a1d4d05f31580fe56c1148b4))
+
 ## [0.3.0](https://github.com/alexasomba/better-auth-flutterwave/compare/v0.2.3...v0.3.0) (2026-10-09)
 
 
