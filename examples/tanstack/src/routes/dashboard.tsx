@@ -12,15 +12,6 @@ const getSession = createServerFn({ method: "GET" }).handler(async () => {
 });
 
 export const Route = createFileRoute("/dashboard")({
-  head: () =>
-    createSeoHead({
-      title: "Billing Dashboard",
-      description:
-        "Authenticated billing dashboard for the Better Auth Flutterwave TanStack Start example.",
-      path: "/dashboard",
-      noIndex: true,
-    }),
-  component: DashboardPage,
   loader: async () => {
     const session = await getSession();
 
@@ -33,6 +24,15 @@ export const Route = createFileRoute("/dashboard")({
       session,
     };
   },
+  component: DashboardPage,
+  head: () =>
+    createSeoHead({
+      title: "Billing Dashboard",
+      description:
+        "Authenticated billing dashboard for the Better Auth Flutterwave TanStack Start example.",
+      path: "/dashboard",
+      noIndex: true,
+    }),
 });
 
 function DashboardPage() {

@@ -2,7 +2,12 @@
 import { createHash } from "node:crypto";
 import { HIDE_METADATA } from "better-auth";
 import type { GenericEndpointContext } from "better-auth";
-import { APIError, getSessionFromCtx, originCheck, sessionMiddleware } from "better-auth/api";
+import {
+  APIError,
+  getSessionFromCtx,
+  originCheckMiddleware,
+  sessionMiddleware,
+} from "better-auth/api";
 import { createAuthEndpoint } from "better-auth/api";
 import * as z from "zod";
 import { createBillingStore } from "./billing-store.ts";
@@ -169,7 +174,7 @@ export const initializeTransaction = <P extends string>(options: AnyFlutterwaveO
     {
       method: "POST",
       body: initializeBodySchema,
-      use: [sessionMiddleware, originCheck],
+      use: [sessionMiddleware, originCheckMiddleware],
     },
     async (ctx) => {
       const { user, referenceId } = await authenticatedReference(
@@ -314,7 +319,7 @@ export const initializeTransaction = <P extends string>(options: AnyFlutterwaveO
 export const verifyTransaction = <P extends string>(options: AnyFlutterwaveOptions, path: P) =>
   createAuthEndpoint(
     path,
-    { method: "POST", body: verifyBodySchema, use: [sessionMiddleware, originCheck] },
+    { method: "POST", body: verifyBodySchema, use: [sessionMiddleware, originCheckMiddleware] },
     async (ctx) => {
       const store = createBillingStore(ctx);
       const verified = await adapter(options).verifyTransaction({
@@ -404,7 +409,11 @@ async function findSubscription(ctx: GenericEndpointContext, id: string | number
 export const cancelSubscription = <P extends string>(options: AnyFlutterwaveOptions, path: P) =>
   createAuthEndpoint(
     path,
-    { method: "POST", body: subscriptionBodySchema, use: [sessionMiddleware, originCheck] },
+    {
+      method: "POST",
+      body: subscriptionBodySchema,
+      use: [sessionMiddleware, originCheckMiddleware],
+    },
     async (ctx) => {
       const store = createBillingStore(ctx);
       const local = await findSubscription(ctx, ctx.body.subscriptionId);
@@ -463,7 +472,7 @@ export const restoreSubscription = <P extends string>(options: AnyFlutterwaveOpt
     {
       method: "POST",
       body: subscriptionBodySchema.omit({ atPeriodEnd: true }),
-      use: [sessionMiddleware, originCheck],
+      use: [sessionMiddleware, originCheckMiddleware],
     },
     async (ctx) => {
       const store = createBillingStore(ctx);

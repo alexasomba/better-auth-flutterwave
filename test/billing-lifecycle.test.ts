@@ -128,7 +128,7 @@ function billingFixture() {
     options: { baseURL: "http://localhost:3000", trustedOrigins: ["http://localhost:3000"] },
     trustedOrigins: ["http://localhost:3000"],
     secret: "auth-secret",
-    logger: { error: vi.fn(), warn: vi.fn() },
+    logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn() },
   };
   const ctx = { context } as unknown as GenericEndpointContext;
   function addPayment(data: Row = {}) {
@@ -205,6 +205,25 @@ function billingFixture() {
 afterEach(() => vi.useRealTimers());
 
 describe("billing lifecycle", () => {
+  it("rejects cookie-authenticated verification from an untrusted origin before contacting Flutterwave", async () => {
+    const fixture = billingFixture();
+    fixture.addPayment();
+    await expect(
+      verifyTransaction(
+        fixture.options,
+        "/verify",
+      )({
+        context: fixture.context as any,
+        body: { txRef: "checkout-1" },
+        request: new Request("http://localhost:3000/verify", {
+          method: "POST",
+          headers: { cookie: "better-auth.session_token=test", origin: "https://untrusted.test" },
+        }),
+      }),
+    ).rejects.toMatchObject({ status: "FORBIDDEN" });
+    expect(fixture.sdk.Transaction.verify_by_tx).not.toHaveBeenCalled();
+  });
+
   it("uses configured plan pricing and quantities despite browser overrides", async () => {
     const fixture = billingFixture();
     await initializeTransaction(

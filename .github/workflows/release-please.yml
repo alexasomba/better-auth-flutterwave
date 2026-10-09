@@ -58,21 +58,25 @@ jobs:
           fetch-depth: 0
           ref: ${{ env.release_tag }}
 
-      - name: Enable Corepack
-        if: ${{ env.release_tag != '' }}
-        run: corepack enable
-
       - name: Setup Node
         if: ${{ env.release_tag != '' }}
         uses: actions/setup-node@v6
         with:
-          node-version: "24.x"
+          node-version: "22.23.3"
           registry-url: "https://registry.npmjs.org"
           package-manager-cache: false
 
       - name: Install npm with trusted publishing support
         if: ${{ env.release_tag != '' }}
-        run: npm install --global npm@11.18.0
+        run: npm install --global npm@12.2.0
+
+      - name: Setup pnpm
+        if: ${{ env.release_tag != '' }}
+        uses: pnpm/action-setup@v6
+        with:
+          version: 12.10.1
+          standalone: true
+          run_install: false
 
       - name: Install dependencies
         if: ${{ env.release_tag != '' }}

@@ -20,7 +20,7 @@ export interface ExampleAuthConfiguration {
   FLUTTERWAVE_SECRET_HASH?: string;
 }
 
-export function createExampleAuth(
+export function createExampleAuthOptions(
   database: BetterAuthOptions["database"],
   configuration: ExampleAuthConfiguration,
 ) {
@@ -137,7 +137,7 @@ export function createExampleAuth(
       } satisfies FlutterwaveOptions)
     : null;
 
-  const auth = betterAuth({
+  const authOptions = {
     baseURL,
     database,
     secret: configuration.BETTER_AUTH_SECRET,
@@ -219,6 +219,14 @@ export function createExampleAuth(
         : []),
       tanstackStartCookies(), // make sure this is the last plugin in the array
     ],
-  });
-  return { auth, flutterwaveOptions };
+  } satisfies BetterAuthOptions;
+  return { authOptions, flutterwaveOptions };
+}
+
+export function createExampleAuth(
+  database: BetterAuthOptions["database"],
+  configuration: ExampleAuthConfiguration,
+) {
+  const { authOptions, flutterwaveOptions } = createExampleAuthOptions(database, configuration);
+  return { auth: betterAuth(authOptions), flutterwaveOptions };
 }

@@ -1,5 +1,4 @@
 /* oxlint-disable no-restricted-imports */
-import { createRequire } from "node:module";
 import * as z from "zod";
 import {
   checkoutDataSchema,
@@ -21,8 +20,8 @@ import {
 
 type SdkResult = Promise<unknown>;
 
-/** The deliberately small, typed portion of flutterwave-node-v3 used by this package. */
-export interface FlutterwaveSdkClient {
+/** The deliberately small provider boundary used by this package. */
+export interface FlutterwaveClient {
   Transaction: {
     verify(input: { id: number }): SdkResult;
     verify_by_tx(input: { tx_ref: string }): SdkResult;
@@ -41,10 +40,13 @@ export interface FlutterwaveSdkClient {
   };
 }
 
+/** @deprecated Use FlutterwaveClient. */
+export type FlutterwaveSdkClient = FlutterwaveClient;
+
 export interface FlutterwaveAdapterOptions {
   publicKey: string;
   secretKey: string;
-  flutterwaveClient?: FlutterwaveSdkClient;
+  flutterwaveClient?: FlutterwaveClient;
   fetch?: typeof globalThis.fetch;
   apiBaseUrl?: string;
 }
@@ -87,18 +89,76 @@ export class FlutterwaveAdapterError extends Error {
   }
 }
 
-type FlutterwaveConstructor = new (
-  publicKey: string,
-  secretKey: string,
-  production?: boolean | string,
-) => FlutterwaveSdkClient;
+function queryString(input: Record<string, unknown>): string {
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(input)) {
+    if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+      query.set(key, String(value));
+    }
+  }
+  const serialized = query.toString();
+  return serialized.length === 0 ? "" : `?${serialized}`;
+}
 
-function createSdkClient(publicKey: string, secretKey: string): FlutterwaveSdkClient {
-  // The official package is CommonJS and ships no TypeScript declarations. Keeping the
-  // assertion here prevents its `any` surface from escaping into application code.
-  const require = createRequire(import.meta.url);
-  const Flutterwave = require("flutterwave-node-v3") as FlutterwaveConstructor;
-  return new Flutterwave(publicKey, secretKey);
+function createHttpClient(
+  fetchImpl: typeof globalThis.fetch,
+  apiBaseUrl: string,
+  secretKey: string,
+): FlutterwaveClient {
+  const request = async (
+    path: string,
+    method: "GET" | "POST" | "PUT" = "GET",
+    body?: unknown,
+  ): Promise<unknown> => {
+    if (typeof fetchImpl !== "function") throw new Error("Fetch is not available");
+
+    const response = await fetchImpl(`${apiBaseUrl}${path}`, {
+      method,
+      headers: {
+        accept: "application/json",
+        authorization: `Bearer ${secretKey}`,
+        "content-type": "application/json",
+      },
+      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+    });
+
+    let raw: unknown;
+    try {
+      raw = await response.json();
+    } catch {
+      throw new Error(`Flutterwave returned a non-JSON response (HTTP ${response.status})`);
+    }
+
+    if (!response.ok) {
+      throw new Error(
+        messageFromUnknown(raw) ?? `Flutterwave request failed with HTTP ${response.status}`,
+      );
+    }
+    return raw;
+  };
+
+  const post = (path: string, body: unknown) => request(path, "POST", body);
+
+  return {
+    Transaction: {
+      verify: ({ id }) => request(`/v3/transactions/${id}/verify`),
+      verify_by_tx: ({ tx_ref }) =>
+        request(`/v3/transactions/verify_by_reference${queryString({ tx_ref })}`),
+      refund: ({ id, amount }) =>
+        post(`/v3/transactions/${id}/refund`, amount === undefined ? {} : { amount }),
+    },
+    PaymentPlan: {
+      get_all: (query) => request(`/v3/payment-plans${queryString(query)}`),
+    },
+    Subscription: {
+      fetch_all: (query) => request(`/v3/subscriptions${queryString(query)}`),
+      cancel: ({ id }) => request(`/v3/subscriptions/${id}/cancel`, "PUT"),
+      activate: ({ id }) => request(`/v3/subscriptions/${id}/activate`, "PUT"),
+    },
+    Tokenized: {
+      charge: (input) => post("/v3/tokenized-charges", input),
+    },
+  };
 }
 
 function messageFromUnknown(value: unknown): string | undefined {
@@ -147,10 +207,9 @@ const optionalPositiveAmountSchema = z.number().positive().optional();
 /**
  * Creates the provider boundary used by the plugin.
  *
- * `flutterwave-node-v3` performs always-on telemetry and writes telemetry state in
- * the operating-system temporary directory. Inject `flutterwaveClient` in tests,
- * serverless environments that prohibit those writes, or when custom transport is
- * required. This adapter intentionally uses only the SDK's Promise API.
+ * Uses Flutterwave's v3 HTTP API directly so applications do not need a separate
+ * SDK dependency. Inject `flutterwaveClient` for a custom provider boundary or
+ * `fetch` for controlled transport and tests.
  */
 export function createFlutterwaveAdapter(options: FlutterwaveAdapterOptions): FlutterwaveAdapter {
   if (!options.publicKey)
@@ -158,12 +217,13 @@ export function createFlutterwaveAdapter(options: FlutterwaveAdapterOptions): Fl
   if (!options.secretKey)
     throw new FlutterwaveAdapterError("configuration", "secretKey is required");
 
-  const client = options.flutterwaveClient ?? createSdkClient(options.publicKey, options.secretKey);
   const fetchImpl = options.fetch ?? globalThis.fetch;
   const configuredApiBaseUrl = options.apiBaseUrl ?? "https://api.flutterwave.com";
   let end = configuredApiBaseUrl.length;
   while (end > 0 && configuredApiBaseUrl.charCodeAt(end - 1) === 47) end--;
   const apiBaseUrl = configuredApiBaseUrl.slice(0, end);
+  const client =
+    options.flutterwaveClient ?? createHttpClient(fetchImpl, apiBaseUrl, options.secretKey);
 
   return {
     async initializePayment(input) {
@@ -238,8 +298,8 @@ export function createFlutterwaveAdapter(options: FlutterwaveAdapterOptions): Fl
       ),
 
     listSubscriptions: (input = {}) => {
-      // flutterwave-node-v3's Joi schema unusually requires these numeric query
-      // values as strings, while our public interface keeps them numeric.
+      // Flutterwave's v3 query parameters are serialized as strings while this
+      // adapter keeps numeric identifiers in its public interface.
       const query = {
         email: input.email,
         status: input.status,

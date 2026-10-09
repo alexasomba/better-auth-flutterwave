@@ -17,7 +17,7 @@ export interface VerifyCallbackResult {
 }
 
 export const verifyFlutterwaveCallbackServerFn = createServerFn({ method: "POST" })
-  .inputValidator(verifyCallbackInputSchema)
+  .validator(verifyCallbackInputSchema)
   .handler(async ({ data }) => {
     const result = await auth.api.verifyFlutterwaveTransaction({
       body: {

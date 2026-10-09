@@ -22,15 +22,20 @@ jobs:
       NPM_CONFIG_OPTIONAL: "true"
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Enable Corepack
-        run: corepack enable
+        uses: actions/checkout@v6
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version: "24.x"
+          node-version: "22.23.3"
+          package-manager-cache: false
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 12.10.1
+          standalone: true
+          run_install: false
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile

@@ -75,6 +75,132 @@ function adapter(client = mockClient(), fetch = vi.fn()) {
 }
 
 describe("Flutterwave provider adapter", () => {
+  it("uses authenticated v3 HTTP endpoints without a provider SDK dependency", async () => {
+    const plan = {
+      id: 9,
+      name: "Monthly",
+      amount: 2500,
+      interval: "monthly",
+      currency: "NGN",
+    };
+    const subscription = {
+      id: 3,
+      amount: 2500,
+      plan: 9,
+      status: "active",
+      currency: "NGN",
+    };
+    const refund = { id: 7, transaction_id: 42, status: "pending", amount_refunded: 500 };
+    const fetch = vi
+      .fn()
+      .mockResolvedValueOnce(Response.json({ status: "success", data: transaction }))
+      .mockResolvedValueOnce(Response.json({ status: "success", data: transaction }))
+      .mockResolvedValueOnce(Response.json({ status: "success", data: [plan] }))
+      .mockResolvedValueOnce(Response.json({ status: "success", data: [subscription] }))
+      .mockResolvedValueOnce(Response.json({ status: "success", data: subscription }))
+      .mockResolvedValueOnce(Response.json({ status: "success", data: subscription }))
+      .mockResolvedValueOnce(Response.json({ status: "success", data: transaction }))
+      .mockResolvedValueOnce(Response.json({ status: "success", data: refund }));
+    const flutterwave = createFlutterwaveAdapter({
+      publicKey: "FLWPUBK_TEST",
+      secretKey: "FLWSECK_TEST",
+      fetch,
+      apiBaseUrl: "https://api.example.test",
+    });
+
+    await flutterwave.verifyTransaction({ transactionId: 42 });
+    await flutterwave.verifyTransaction({ txRef: "better-auth_123" });
+    await flutterwave.listPaymentPlans();
+    await flutterwave.listSubscriptions({ email: "customer@example.com", plan: 9 });
+    await flutterwave.cancelSubscription(3);
+    await flutterwave.activateSubscription(3);
+    await flutterwave.chargeToken({
+      token: "flw-t1nf-123",
+      currency: "NGN",
+      amount: 2500,
+      email: "customer@example.com",
+      tx_ref: "renewal_123",
+    });
+    await flutterwave.refundTransaction(42, 500);
+
+    expect(fetch).toHaveBeenCalledTimes(8);
+    const authenticated = {
+      accept: "application/json",
+      authorization: "Bearer FLWSECK_TEST",
+      "content-type": "application/json",
+    };
+    expect(fetch).toHaveBeenNthCalledWith(
+      1,
+      "https://api.example.test/v3/transactions/42/verify",
+      expect.objectContaining({ method: "GET", headers: authenticated }),
+    );
+    expect(fetch).toHaveBeenNthCalledWith(
+      2,
+      "https://api.example.test/v3/transactions/verify_by_reference?tx_ref=better-auth_123",
+      expect.objectContaining({ method: "GET", headers: authenticated }),
+    );
+    expect(fetch).toHaveBeenNthCalledWith(
+      3,
+      "https://api.example.test/v3/payment-plans",
+      expect.objectContaining({ method: "GET", headers: authenticated }),
+    );
+    expect(fetch).toHaveBeenNthCalledWith(
+      4,
+      "https://api.example.test/v3/subscriptions?email=customer%40example.com&plan=9",
+      expect.objectContaining({ method: "GET", headers: authenticated }),
+    );
+    expect(fetch).toHaveBeenNthCalledWith(
+      5,
+      "https://api.example.test/v3/subscriptions/3/cancel",
+      expect.objectContaining({ method: "PUT", headers: authenticated }),
+    );
+    expect(fetch).toHaveBeenNthCalledWith(
+      6,
+      "https://api.example.test/v3/subscriptions/3/activate",
+      expect.objectContaining({ method: "PUT", headers: authenticated }),
+    );
+    expect(fetch).toHaveBeenNthCalledWith(
+      7,
+      "https://api.example.test/v3/tokenized-charges",
+      expect.objectContaining({
+        method: "POST",
+        headers: authenticated,
+        body: expect.stringContaining('"tx_ref":"renewal_123"'),
+      }),
+    );
+    expect(fetch).toHaveBeenNthCalledWith(
+      8,
+      "https://api.example.test/v3/transactions/42/refund",
+      expect.objectContaining({
+        method: "POST",
+        headers: authenticated,
+        body: JSON.stringify({ amount: 500 }),
+      }),
+    );
+  });
+
+  it("maps provider HTTP failures to operation-specific errors", async () => {
+    const fetch = vi
+      .fn()
+      .mockResolvedValue(
+        Response.json(
+          { status: "error", message: "Invalid secret key", data: null },
+          { status: 401 },
+        ),
+      );
+    const flutterwave = createFlutterwaveAdapter({
+      publicKey: "FLWPUBK_TEST",
+      secretKey: "FLWSECK_TEST",
+      fetch,
+    });
+
+    await expect(flutterwave.verifyTransaction({ transactionId: 42 })).rejects.toMatchObject({
+      name: "FlutterwaveAdapterError",
+      operation: "verify transaction",
+      message: "Invalid secret key",
+    });
+  });
+
   it.each([
     ["https://api.example.test", "https://api.example.test/v3/payments"],
     ["https://api.example.test/", "https://api.example.test/v3/payments"],

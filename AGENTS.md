@@ -54,7 +54,7 @@ For best practices and reference implementations, research:
 ## Tech Stack
 
 - **Core**: TypeScript, pnpm, tsdown, vitest, Oxlint
-- **Dependencies**: `better-auth`, `flutterwave-node-v3`, `better-call`, `zod`
+- **Dependencies**: `better-auth`, `better-call`, `zod`; use Node's built-in `fetch` for Flutterwave v3 requests
 
 ## Project Map
 
