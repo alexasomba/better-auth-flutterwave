@@ -8,10 +8,10 @@ webhooks, refunds, and reconciliation.
 ## Install
 
 ```bash
-npm install better-auth better-auth-flutterwave flutterwave-node-v3
+npm install better-auth better-auth-flutterwave
 ```
 
-Node.js 22 or newer is required.
+Node.js 22.22.2 or newer is required. Development and CI use Node 22.23.3, pinned in `.node-version`, and pnpm 12.10.1. The current jsdom test environment sets the minimum Node 22 patch level.
 
 ## Configure
 
@@ -62,9 +62,9 @@ export const auth = betterAuth({
 });
 ```
 
-`flutterwaveClient` may be injected for testing or advanced integrations, and `fetch` may be
-injected for the narrow direct-HTTP operations used by Flutterwave Standard. By default, the plugin
-constructs `flutterwave-node-v3` from the public and secret keys.
+The plugin calls Flutterwave's v3 API with Node's built-in `fetch`; you do not need a separate
+Flutterwave SDK dependency. Inject `flutterwaveClient` for a custom provider boundary or `fetch` for
+tests and controlled transports.
 
 Configure the client plugin:
 
@@ -228,7 +228,7 @@ the same seat price as checkout and rejects canceled or provider-managed subscri
 Release Please opens the version/change-log PR after reviewed changes reach `main`. Merging that
 release PR creates the version tag and triggers the tag-pinned npm trusted-publishing workflow.
 The npm trusted publisher must reference this repository and `.github/workflows/release-please.yml`.
-The workflow requires Node 24, the locked pnpm version, library tests, a package build, package/type
+The workflow requires Node 22.23.3, the locked pnpm version, library tests, a package build, package/type
 lint, and the downstream example/schema checks. A branch push or ordinary application build does
 not publish this package.
 
@@ -320,21 +320,17 @@ provider exposes the other's customer or subscription identifiers.
 Public identifiers use Flutterwave-native names: `txRef`, `transactionId`, `flwRef`,
 `paymentPlanId`, `subscriptionId`, `secretHash`, and `subaccountId`.
 
-## SDK behavior
+## Provider transport
 
-[`flutterwave-node-v3`](https://www.npmjs.com/package/flutterwave-node-v3) is an untyped CommonJS
-SDK. The plugin keeps it behind a Zod-validated adapter, uses only its Promise APIs, and prevents
-SDK `any` values from leaking into the public API.
-
-The SDK performs always-on telemetry and may write telemetry data through an operating-system
-temporary file. This behavior comes from the upstream SDK, not Better Auth or this plugin. Review
-the SDK and your deployment environment’s privacy, filesystem, and serverless constraints before
-adopting it. Injecting a compatible client helps with tests but does not change upstream behavior
-when the official SDK is used.
+Provider requests use Flutterwave's v3 HTTP API with bearer authentication and validate response
+envelopes before returning data to the plugin. The adapter accepts injected `fetch` and
+`flutterwaveClient` implementations for tests and custom transports.
 
 ## Development
 
-This repository uses [Vite+](https://viteplus.dev):
+This repository uses [Vite+](https://viteplus.dev). `vp check` uses its native TypeScript checker. Declaration builds still require the compiler API provided by the maintained `@typescript/typescript6` compatibility package; Vite+ 1.1.0 explicitly rejects the TypeScript 7 compiler API for this mode.
+
+Commands:
 
 ```bash
 vp install

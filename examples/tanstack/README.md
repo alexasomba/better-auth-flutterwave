@@ -14,6 +14,8 @@ BETTER_AUTH_SECRET=...
 BETTER_AUTH_URL=http://localhost:3000
 ```
 
+Use Node 22.23.3 (minimum 22.22.2) and pnpm 12.10.1. Vite+ manages the pinned runtime and native pnpm executable. Formatting and linting use `vp fmt` and `vp lint`, including the TanStack Query and Router rules.
+
 Install and run from the repository root:
 
 ```bash

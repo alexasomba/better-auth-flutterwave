@@ -29,6 +29,21 @@ const config = defineConfig({
     viteReact(),
   ],
   lint: {
+    jsPlugins: [
+      { name: "@tanstack/query", specifier: "@tanstack/eslint-plugin-query" },
+      { name: "@tanstack/router", specifier: "@tanstack/eslint-plugin-router" },
+    ],
+    rules: {
+      "@tanstack/query/exhaustive-deps": "error",
+      "@tanstack/query/no-rest-destructuring": "warn",
+      "@tanstack/query/stable-query-client": "error",
+      "@tanstack/query/no-unstable-deps": "error",
+      "@tanstack/query/infinite-query-property-order": "error",
+      "@tanstack/query/no-void-query-fn": "error",
+      "@tanstack/query/mutation-property-order": "error",
+      "@tanstack/router/create-route-property-order": "warn",
+      "@tanstack/router/route-param-names": "error",
+    },
     options: {
       typeAware: true,
       typeCheck: true,

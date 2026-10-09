@@ -76,50 +76,33 @@
     "lint:package": "publint run --strict",
     "lint:types": "node scripts/lint-types-packed.mjs",
     "prepublishOnly": "vp check && vp test run && vp pack && pnpm run lint:package && pnpm run lint:types",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "typecheck": "tsc6 -p tsconfig.json --noEmit",
     "skills:install": "skills-npm --cwd examples/tanstack --yes --force",
     "skills:dry-run": "skills-npm --cwd examples/tanstack --dry-run --yes --agents universal --force"
   },
   "dependencies": {
     "better-call": "catalog:",
-    "defu": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "catalog:",
     "@better-fetch/fetch": "catalog:",
-    "@commitlint/cli": "catalog:",
-    "@commitlint/config-conventional": "catalog:",
-    "@eslint/compat": "catalog:",
-    "@eslint/js": "catalog:",
     "@tanstack/intent": "catalog:",
     "@types/node": "catalog:",
-    "@typescript-eslint/eslint-plugin": "catalog:",
-    "@typescript-eslint/parser": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "better-auth": "catalog:",
-    "eslint-plugin-import-x": "catalog:",
-    "eslint-plugin-promise": "catalog:",
-    "eslint-plugin-react-hooks": "catalog:",
-    "eslint-plugin-unicorn": "catalog:",
-    "flutterwave-node-v3": "catalog:",
     "publint": "catalog:",
     "skills-npm": "catalog:",
     "typescript": "catalog:",
-    "typescript-eslint": "catalog:",
     "vite": "catalog:",
     "vite-plus": "catalog:",
     "vitest": "catalog:"
   },
   "peerDependencies": {
-    "better-auth": "catalog:",
-    "flutterwave-node-v3": "catalog:"
-  },
-  "optionalDependencies": {
-    "@rollup/rollup-linux-x64-gnu": "catalog:"
+    "better-auth": "catalog:"
   },
   "engines": {
     "node": ">=22.0.0"
   },
-  "packageManager": "pnpm@11.18.0"
+  "packageManager": "pnpm@12.10.1"
 }

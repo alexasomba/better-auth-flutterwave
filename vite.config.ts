@@ -22,7 +22,6 @@ const config: UserConfig = defineConfig({
         "kysely",
         "@standard-schema/spec",
         "zod",
-        "defu",
       ],
       onlyBundle: false,
     },

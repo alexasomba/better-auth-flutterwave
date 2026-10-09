@@ -6,6 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createSeoHead } from "@/lib/seo";
 
 export const Route = createFileRoute("/billing/flutterwave/callback")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    txRef: typeof search.tx_ref === "string" ? search.tx_ref : undefined,
+    transactionId:
+      typeof search.transaction_id === "string" ? Number(search.transaction_id) : undefined,
+  }),
   head: () =>
     createSeoHead({
       title: "Flutterwave Checkout Callback",
@@ -13,11 +18,6 @@ export const Route = createFileRoute("/billing/flutterwave/callback")({
       path: "/billing/flutterwave/callback",
       noIndex: true,
     }),
-  validateSearch: (search: Record<string, unknown>) => ({
-    txRef: typeof search.tx_ref === "string" ? search.tx_ref : undefined,
-    transactionId:
-      typeof search.transaction_id === "string" ? Number(search.transaction_id) : undefined,
-  }),
   component: CallbackPage,
 });
 
