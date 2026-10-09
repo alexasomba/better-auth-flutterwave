@@ -223,6 +223,23 @@ Cancellation and restoration accept either the local subscription `id` or a nume
 active. A local subscription that has already ended requires a new checkout. Renewal calculates
 the same seat price as checkout and rejects canceled or provider-managed subscriptions.
 
+## Release and downstream updates
+
+Release Please opens the version/change-log PR after reviewed changes reach `main`. Merging that
+release PR creates the version tag and triggers the tag-pinned npm trusted-publishing workflow.
+The npm trusted publisher must reference this repository and `.github/workflows/release-please.yml`.
+The workflow requires Node 24, the locked pnpm version, library tests, a package build, package/type
+lint, and the downstream example/schema checks. A branch push or ordinary application build does
+not publish this package.
+
+Consumers must use a release containing the new scheduled-cancellation export before importing
+it; the previously published 0.2.1 release does not include these changes. The example uses
+`workspace:*` and therefore follows the library in this checkout. External consumers must update
+their dependency and lockfile after publication, review billing schema constraints, and wire the
+processor into their authorized scheduler. See [the persistent example setup](examples/tanstack/README.md)
+for the D1 migration and Cron Trigger configuration. This repository does not automatically
+upgrade or deploy external applications.
+
 ## Packaged agent skills
 
 The npm package ships version-matched coding-agent skills in its `skills/` directory. They help an

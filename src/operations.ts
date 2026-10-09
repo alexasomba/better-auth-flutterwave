@@ -1,7 +1,7 @@
 /* oxlint-disable typescript/strict-boolean-expressions */
 import type { GenericEndpointContext } from "better-auth";
 import { APIError } from "better-auth/api";
-import { createBillingStore } from "./billing-store.ts";
+import { createBillingStore, type BillingStoreAdapter } from "./billing-store.ts";
 import { recordVerifiedPayment } from "./billing-lifecycle.ts";
 import { createFlutterwaveAdapter } from "./flutterwave-sdk.ts";
 import { createRenewalMetadata, stringifyFlutterwaveMetadata } from "./metadata.ts";
@@ -180,7 +180,7 @@ export async function chargeSubscriptionRenewal(
 
 /** Call from an independently authorized scheduled job; no browser endpoint is exposed. */
 export async function processScheduledFlutterwaveCancellations(
-  ctx: GenericEndpointContext,
+  ctx: { context: { adapter: BillingStoreAdapter } },
   options: AnyFlutterwaveOptions,
   input: { now?: Date; limit?: number } = {},
 ) {

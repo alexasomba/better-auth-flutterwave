@@ -75,6 +75,9 @@ jobs:
       - name: TanStack example check
         run: pnpm --dir examples/tanstack run check:ci
 
+      - name: TanStack persistent billing schema check
+        run: pnpm --dir examples/tanstack run db:billing:check
+
       - name: TanStack example test
         run: pnpm --dir examples/tanstack run test
 
@@ -83,3 +86,10 @@ jobs:
 
       - name: TanStack example Wrangler dry-run
         run: pnpm --dir examples/tanstack run wrangler:dry-run
+
+      - name: TanStack persistent billing build and dry-run
+        env:
+          WRANGLER_SEND_METRICS: "false"
+        run: |
+          pnpm --dir examples/tanstack run build:billing
+          pnpm --dir examples/tanstack run wrangler:dry-run

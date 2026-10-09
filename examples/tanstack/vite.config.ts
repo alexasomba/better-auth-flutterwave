@@ -19,7 +19,11 @@ const config = defineConfig({
   },
   plugins: [
     devtools(),
-    cloudflare({ viteEnvironment: { name: "ssr" } }),
+    cloudflare({
+      viteEnvironment: { name: "ssr" },
+      configPath:
+        process.env.BILLING_PERSISTENT === "1" ? "wrangler.billing.jsonc" : "wrangler.jsonc",
+    }),
     tailwindcss(),
     tanstackStart(),
     viteReact(),

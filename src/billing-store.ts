@@ -13,7 +13,10 @@ import type {
   User,
 } from "./types.ts";
 
-type Adapter = GenericEndpointContext["context"]["adapter"];
+export type BillingStoreAdapter = Pick<
+  GenericEndpointContext["context"]["adapter"],
+  "create" | "findOne" | "findMany" | "update" | "updateMany"
+>;
 type WhereValue = string | number | boolean | Date | null;
 type WhereClause = { field: string; value: WhereValue }[];
 
@@ -119,11 +122,13 @@ function sortSubscriptionsForCurrent(
   });
 }
 
-export function createBillingStore(ctx: GenericEndpointContext): BillingStore {
+export function createBillingStore(ctx: {
+  context: { adapter: BillingStoreAdapter };
+}): BillingStore {
   return createBillingStoreFromAdapter(ctx.context.adapter);
 }
 
-export function createBillingStoreFromAdapter(adapter: Adapter): BillingStore {
+export function createBillingStoreFromAdapter(adapter: BillingStoreAdapter): BillingStore {
   const findOne = async <T>(model: string, where: WhereClause): Promise<T | null> =>
     (await adapter.findOne<T>({ model, where })) ?? null;
   const findMany = async <T>(model: string, where?: WhereClause): Promise<T[]> =>
