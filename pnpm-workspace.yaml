@@ -92,12 +92,15 @@ overrides:
   source-map-js: 1.2.2
   brace-expansion: 5.0.12
   esbuild: 0.28.1
-  "gray-matter>js-yaml": 3.14.2
+  fast-uri: 3.1.8
+  "js-yaml@^3": 3.15.2
+  "js-yaml@^4": 4.3.2
   joi: 17.13.8
-  js-yaml: 4.3.2
+  launch-editor: 2.14.2
   postcss: 8.5.23
   rollup: npm:@rollup/wasm-node@4.60.3
   seroval: 1.6.3
+  shell-quote: 1.11.0
   vite: "catalog:"
   vitest: "catalog:"
 
