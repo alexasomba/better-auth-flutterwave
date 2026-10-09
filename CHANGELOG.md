@@ -2,6 +2,13 @@
 
 All notable changes to `better-auth-flutterwave` will be documented in this file.
 
+## [0.2.3](https://github.com/alexasomba/better-auth-flutterwave/compare/v0.2.2...v0.2.3) (2026-10-09)
+
+
+### Miscellaneous Chores
+
+* modernize tooling and remove the unused Flutterwave SDK runtime dependency ([cf1401e](https://github.com/alexasomba/better-auth-flutterwave/commit/cf1401e4bba05bbbbc5da160e93dbcd7e4ee86e6))
+
 ## [0.2.2](https://github.com/alexasomba/better-auth-flutterwave/compare/v0.2.1...v0.2.2) (2026-10-09)
 
 
