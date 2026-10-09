@@ -17,7 +17,7 @@ import {
   type FlutterwaveTokenChargeInput,
   type FlutterwaveTransactionData,
   type StandardCheckoutInput,
-} from "./flutterwave-contracts";
+} from "./flutterwave-contracts.ts";
 
 type SdkResult = Promise<unknown>;
 

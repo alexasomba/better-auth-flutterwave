@@ -98,4 +98,34 @@ describe("Flutterwave PaymentManager", () => {
       ),
     );
   });
+
+  it("cancels a local subscription using its local ID and paid period", async () => {
+    flutterwaveActions.config.mockResolvedValue({ data: { plans: [], products: [] } });
+    subscriptionActions.list.mockResolvedValue({
+      data: {
+        subscriptions: [
+          {
+            id: "local-sub",
+            plan: "team",
+            status: "active",
+            referenceId: "user-1",
+            periodEnd: "2026-11-01T12:00:00Z",
+            cancelAtPeriodEnd: false,
+          },
+        ],
+      },
+    });
+    flutterwaveActions.transaction.list.mockResolvedValue({ data: { transactions: [] } });
+    authClient.organization.list.mockResolvedValue({ data: [] });
+    subscriptionActions.cancel.mockResolvedValue({ status: "scheduled" });
+    render(<PaymentManager activeTab="subscriptions" />);
+    const cancel = await screen.findByRole("button", { name: "Cancel at period end" });
+    cancel.click();
+    await waitFor(() =>
+      expect(subscriptionActions.cancel).toHaveBeenCalledWith(
+        { subscriptionId: "local-sub", atPeriodEnd: true },
+        { throw: true },
+      ),
+    );
+  });
 });

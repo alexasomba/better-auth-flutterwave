@@ -4,7 +4,7 @@ import {
   createFlutterwaveAdapter,
   FlutterwaveAdapterError,
   type FlutterwaveSdkClient,
-} from "../src/flutterwave-sdk";
+} from "../src/flutterwave-sdk.ts";
 
 const transaction = {
   id: 42,

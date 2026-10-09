@@ -2,9 +2,10 @@
 import type { GenericEndpointContext } from "better-auth";
 import { APIError } from "better-auth/api";
 import * as z from "zod";
-import { createBillingStore } from "./billing-store";
-import { createFlutterwaveAdapter } from "./flutterwave-sdk";
-import type { AnyFlutterwaveOptions, FlutterwaveTransactionResponse } from "./types";
+import { createBillingStore } from "./billing-store.ts";
+import { paymentMatches, recordVerifiedPayment } from "./billing-lifecycle.ts";
+import { createFlutterwaveAdapter } from "./flutterwave-sdk.ts";
+import type { AnyFlutterwaveOptions, FlutterwaveTransactionResponse } from "./types.ts";
 
 export type FlutterwaveReconciliationSource = "webhook" | "queue" | "admin" | "server" | "browser";
 
@@ -38,10 +39,7 @@ export async function reconcileFlutterwaveTransaction(
     txRef: input.txRef,
     transactionId: input.transactionId,
   });
-  const matches =
-    verified.tx_ref === local.txRef &&
-    verified.amount === local.amount &&
-    verified.currency === local.currency;
+  const matches = paymentMatches(local, verified);
   if (!matches) {
     if (input.throwOnError === false) {
       return {
@@ -53,24 +51,7 @@ export async function reconcileFlutterwaveTransaction(
     }
     throw new APIError("BAD_REQUEST", { message: "Transaction details do not match" });
   }
-  const now = new Date();
-  await store.updateTransactionByTxRef(local.txRef, {
-    transactionId: verified.id,
-    flwRef: verified.flw_ref,
-    chargedAmount: verified.charged_amount,
-    paymentType: verified.payment_type,
-    status: verified.status,
-    verifiedAt: now,
-    reconciledAt: now,
-    updatedAt: now,
-  });
-  for (const subscription of await store.findSubscriptionsByTxRef(local.txRef)) {
-    await store.updateSubscription(subscription.id, {
-      status: verified.status === "successful" ? "active" : subscription.status,
-      reconciledAt: now,
-      updatedAt: now,
-    });
-  }
+  await recordVerifiedPayment(ctx, options, local, verified);
   const data: FlutterwaveTransactionResponse = {
     id: verified.id,
     txRef: verified.tx_ref,

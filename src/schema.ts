@@ -1,6 +1,6 @@
 import { mergeSchema, type BetterAuthPluginDBSchema, type DBFieldAttribute } from "better-auth/db";
 
-import type { FlutterwaveOptions } from "./types";
+import type { FlutterwaveOptions } from "./types.ts";
 
 type PluginSchemaTable<TableName extends string, FieldName extends string> = Record<
   TableName,

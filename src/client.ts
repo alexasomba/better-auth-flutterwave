@@ -7,12 +7,12 @@ import type {
   FlutterwaveTransaction,
   FlutterwaveTransactionResponse,
   Subscription,
-} from "./types";
-import type { flutterwave as flutterwaveServer } from "./index";
-import { PACKAGE_VERSION } from "./version";
+} from "./types.ts";
+import type { flutterwave as flutterwaveServer } from "./index.ts";
+import { PACKAGE_VERSION } from "./version.ts";
 
-export { parseFlutterwaveMetadata } from "./metadata";
-export type { FlutterwaveMetadata } from "./metadata";
+export { parseFlutterwaveMetadata } from "./metadata.ts";
+export type { FlutterwaveMetadata } from "./metadata.ts";
 
 export type FetchResult<T, O extends BetterFetchOption | undefined> = O extends { throw: true }
   ? T
@@ -29,6 +29,7 @@ export interface FlutterwaveProviderActions {
         referenceId?: string;
         plan?: string;
         product?: string;
+        quantity?: number;
         paymentOptions?: string;
         subaccounts?: {
           id: string;

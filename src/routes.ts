@@ -5,18 +5,18 @@ import type { GenericEndpointContext } from "better-auth";
 import { APIError, getSessionFromCtx, originCheck, sessionMiddleware } from "better-auth/api";
 import { createAuthEndpoint } from "better-auth/api";
 import * as z from "zod";
-import { createBillingStore } from "./billing-store";
-import type { FlutterwaveTransactionData } from "./flutterwave-contracts";
-import { createFlutterwaveAdapter } from "./flutterwave-sdk";
-import { createCheckoutMetadata, stringifyFlutterwaveMetadata } from "./metadata";
-import { authorizeBillingReference, resolveBillingReferenceId } from "./reference-access";
-import { getWebhookHeaders, getWebhookRequest } from "./route-modules/webhook";
+import { createBillingStore } from "./billing-store.ts";
+import { paymentMatches, recordVerifiedPayment } from "./billing-lifecycle.ts";
+import type { FlutterwaveTransactionData } from "./flutterwave-contracts.ts";
+import { createFlutterwaveAdapter } from "./flutterwave-sdk.ts";
+import { createCheckoutMetadata, stringifyFlutterwaveMetadata } from "./metadata.ts";
+import { authorizeBillingReference, resolveBillingReferenceId } from "./reference-access.ts";
+import { getWebhookHeaders, getWebhookRequest } from "./route-modules/webhook.ts";
 import {
   FLUTTERWAVE_ERROR_CODES,
   hmacSha256Base64,
   timingSafeEqualString,
-} from "./route-modules/shared";
-import { encryptPaymentToken } from "./token-crypto";
+} from "./route-modules/shared.ts";
 import type {
   AnyFlutterwaveOptions,
   FlutterwaveInitializeResult,
@@ -24,8 +24,13 @@ import type {
   FlutterwaveTransactionResponse,
   Session,
   User,
-} from "./types";
-import { getPlans, normalizeSubscriptionGroup } from "./utils";
+} from "./types.ts";
+import {
+  calculatePlanAmount,
+  getPlanSeatAmount,
+  getPlans,
+  normalizeSubscriptionGroup,
+} from "./utils.ts";
 
 export { FLUTTERWAVE_ERROR_CODES };
 
@@ -199,15 +204,31 @@ export const initializeTransaction = <P extends string>(options: AnyFlutterwaveO
       if (ctx.body.product && !product) {
         throw new APIError("NOT_FOUND", { message: "Product not found" });
       }
+      if (plan && product) {
+        throw new APIError("BAD_REQUEST", { message: "Select a plan or a product, not both" });
+      }
+      if (plan) {
+        if (plan.amount === undefined || !Number.isFinite(plan.amount) || plan.amount <= 0) {
+          throw new APIError("BAD_REQUEST", {
+            message: "The plan requires a configured positive amount",
+          });
+        }
+        if (
+          ctx.body.quantity > 1 &&
+          (plan.paymentPlanId != null || getPlanSeatAmount(plan) === undefined)
+        ) {
+          throw new APIError("BAD_REQUEST", {
+            message: "Additional seats require a locally billed per-seat price",
+          });
+        }
+      }
 
-      const amount =
-        ctx.body.amount ??
-        (plan?.amount !== undefined
-          ? plan.amount + (plan.seatAmount ?? 0) * Math.max(0, ctx.body.quantity - 1)
-          : product
-            ? product.price * ctx.body.quantity
-            : undefined);
-      const currency = ctx.body.currency ?? plan?.currency ?? product?.currency;
+      const amount = plan
+        ? calculatePlanAmount(plan, ctx.body.quantity)
+        : product
+          ? product.price * ctx.body.quantity
+          : ctx.body.amount;
+      const currency = plan ? plan.currency : product ? product.currency : ctx.body.currency;
       if (!amount || !currency) {
         throw new APIError("BAD_REQUEST", { message: "amount and currency are required" });
       }
@@ -296,74 +317,27 @@ export const verifyTransaction = <P extends string>(options: AnyFlutterwaveOptio
     { method: "POST", body: verifyBodySchema, use: [sessionMiddleware, originCheck] },
     async (ctx) => {
       const store = createBillingStore(ctx);
-      const expected = ctx.body.txRef
-        ? await store.findTransactionByTxRef(ctx.body.txRef)
-        : await store.findTransactionById(Number(ctx.body.transactionId));
-      if (!expected) throw new APIError("NOT_FOUND", { message: "Transaction not found" });
-      if (ctx.body.referenceId !== undefined && ctx.body.referenceId !== expected.referenceId) {
-        throw new APIError("UNAUTHORIZED");
-      }
-      await authenticatedReference(ctx, options, "verify-transaction", expected.referenceId);
       const verified = await adapter(options).verifyTransaction({
         transactionId:
           ctx.body.transactionId === undefined ? undefined : Number(ctx.body.transactionId),
         txRef: ctx.body.txRef,
       });
+      const expected = await store.findTransactionByTxRef(verified.tx_ref);
+      if (!expected) throw new APIError("NOT_FOUND", { message: "Transaction not found" });
+      if (ctx.body.referenceId !== undefined && ctx.body.referenceId !== expected.referenceId) {
+        throw new APIError("UNAUTHORIZED");
+      }
+      await authenticatedReference(ctx, options, "verify-transaction", expected.referenceId);
       if (
-        verified.tx_ref !== expected.txRef ||
-        verified.amount !== expected.amount ||
-        verified.currency !== expected.currency ||
+        (ctx.body.txRef !== undefined && verified.tx_ref !== ctx.body.txRef) ||
+        !paymentMatches(expected, verified) ||
         verified.status !== "successful"
       ) {
         throw new APIError("BAD_REQUEST", {
           message: "Verified transaction does not match the expected payment",
         });
       }
-      const now = new Date();
-      await store.updateTransactionByTxRef(expected.txRef, {
-        transactionId: verified.id,
-        flwRef: verified.flw_ref,
-        chargedAmount: verified.charged_amount,
-        paymentType: verified.payment_type,
-        status: verified.status,
-        verifiedAt: now,
-        reconciledAt: now,
-        updatedAt: now,
-      });
-
-      const linked = await store.findSubscriptionsByTxRef(expected.txRef);
-      for (const subscription of linked) {
-        let subscriptionId = subscription.subscriptionId;
-        if (subscription.paymentPlanId && subscription.billingEmail) {
-          const remote = await adapter(options).listSubscriptions({
-            email: subscription.billingEmail,
-            plan: subscription.paymentPlanId,
-            transactionId: verified.id,
-          });
-          const matches = remote.filter((candidate) => candidate.status !== "cancelled");
-          subscriptionId = matches.length === 1 ? matches[0]?.id : undefined;
-        }
-        await store.updateSubscription(subscription.id, {
-          subscriptionId,
-          status:
-            subscription.paymentPlanId !== undefined &&
-            subscription.paymentPlanId !== null &&
-            subscriptionId === undefined
-              ? "incomplete"
-              : "active",
-          encryptedPaymentToken: verified.card?.token
-            ? await encryptPaymentToken(verified.card.token, ctx.context.secret)
-            : subscription.encryptedPaymentToken,
-          periodStart: now,
-          reconciledAt: now,
-          updatedAt: now,
-        });
-        await store.retireCompetingSubscriptions(
-          subscription.referenceId,
-          subscription.groupId ?? null,
-          subscription.id,
-        );
-      }
+      await recordVerifiedPayment(ctx, options, expected, verified);
       return {
         status: verified.status,
         txRef: verified.tx_ref,
@@ -411,9 +385,21 @@ export const listSubscriptions = <P extends string>(options: AnyFlutterwaveOptio
   );
 
 const subscriptionBodySchema = z.object({
-  subscriptionId: z.coerce.number().int().positive(),
+  subscriptionId: z.union([z.number().int().positive(), z.string().min(1)]),
   atPeriodEnd: z.boolean().optional(),
 });
+
+async function findSubscription(ctx: GenericEndpointContext, id: string | number) {
+  const store = createBillingStore(ctx);
+  if (typeof id === "string") {
+    const local = await store.findSubscriptionById(id);
+    if (local) return local;
+  }
+  const providerId = Number(id);
+  return Number.isInteger(providerId) && providerId > 0
+    ? store.findSubscriptionByProviderId(providerId)
+    : null;
+}
 
 export const cancelSubscription = <P extends string>(options: AnyFlutterwaveOptions, path: P) =>
   createAuthEndpoint(
@@ -421,7 +407,7 @@ export const cancelSubscription = <P extends string>(options: AnyFlutterwaveOpti
     { method: "POST", body: subscriptionBodySchema, use: [sessionMiddleware, originCheck] },
     async (ctx) => {
       const store = createBillingStore(ctx);
-      const local = await store.findSubscriptionByProviderId(ctx.body.subscriptionId);
+      const local = await findSubscription(ctx, ctx.body.subscriptionId);
       if (!local) throw new APIError("NOT_FOUND", { message: "Subscription not found" });
       await authenticatedReference(ctx, options, "disable-subscription", local.referenceId);
       const now = new Date();
@@ -429,14 +415,37 @@ export const cancelSubscription = <P extends string>(options: AnyFlutterwaveOpti
         ctx.body.atPeriodEnd === true ||
         options.subscription?.cancelBehavior === "at_period_end"
       ) {
+        if (!local.periodEnd || !Number.isFinite(new Date(local.periodEnd).getTime())) {
+          throw new APIError("BAD_REQUEST", {
+            message: "The paid subscription period is unknown; cancel immediately instead",
+          });
+        }
+        if (local.paymentPlanId != null && local.subscriptionId == null) {
+          throw new APIError("BAD_REQUEST", {
+            message:
+              "The native subscription has not been identified yet; reconcile its payment first",
+          });
+        }
+        // Stop the next provider charge now; the scheduler ends the already-paid access later.
+        if (local.subscriptionId != null && local.cancelAtPeriodEnd !== true) {
+          await adapter(options).cancelSubscription(local.subscriptionId);
+        }
         await store.updateSubscription(local.id, {
           cancelAtPeriodEnd: true,
-          cancelAt: local.periodEnd ?? now,
+          cancelAt: local.periodEnd,
+          ...(local.subscriptionId != null ? { canceledAt: local.canceledAt ?? now } : {}),
           updatedAt: now,
         });
         return { status: "scheduled" };
       }
-      await adapter(options).cancelSubscription(ctx.body.subscriptionId);
+      if (local.paymentPlanId != null && local.subscriptionId == null) {
+        throw new APIError("BAD_REQUEST", {
+          message:
+            "The native subscription has not been identified yet; reconcile its payment first",
+        });
+      }
+      if (local.subscriptionId != null)
+        await adapter(options).cancelSubscription(local.subscriptionId);
       await store.updateSubscription(local.id, {
         status: "canceled",
         cancelAtPeriodEnd: false,
@@ -458,19 +467,36 @@ export const restoreSubscription = <P extends string>(options: AnyFlutterwaveOpt
     },
     async (ctx) => {
       const store = createBillingStore(ctx);
-      const local = await store.findSubscriptionByProviderId(ctx.body.subscriptionId);
+      const local = await findSubscription(ctx, ctx.body.subscriptionId);
       if (!local) throw new APIError("NOT_FOUND", { message: "Subscription not found" });
       await authenticatedReference(ctx, options, "enable-subscription", local.referenceId);
-      await adapter(options).activateSubscription(ctx.body.subscriptionId);
+      if (
+        local.subscriptionId == null &&
+        local.periodEnd != null &&
+        new Date(local.periodEnd) <= new Date()
+      ) {
+        throw new APIError("BAD_REQUEST", {
+          message: "The paid period has ended; renew through checkout instead",
+        });
+      }
+      if (local.cancelAtPeriodEnd !== true || local.canceledAt != null) {
+        if (local.subscriptionId == null) {
+          if (local.status === "active" && local.endedAt == null) return { status: "active" };
+          throw new APIError("BAD_REQUEST", {
+            message: "A canceled local subscription requires a new checkout",
+          });
+        }
+        await adapter(options).activateSubscription(local.subscriptionId);
+      }
       await store.updateSubscription(local.id, {
-        status: "active",
+        status: local.cancelAtPeriodEnd === true ? local.status : "active",
         cancelAtPeriodEnd: false,
         cancelAt: null,
         canceledAt: null,
         endedAt: null,
         updatedAt: new Date(),
       });
-      return { status: "active" };
+      return { status: local.cancelAtPeriodEnd === true ? local.status : "active" };
     },
   );
 
@@ -541,12 +567,20 @@ export const flutterwaveWebhook = <P extends string>(options: AnyFlutterwaveOpti
       const event = parsedEvent.data;
       const data = event.data;
       const eventId = createHash("sha256")
-        .update(`${event.event}:${String(data.id ?? "")}:${String(data.status ?? "")}`)
+        .update(
+          data.id === undefined
+            ? rawBody
+            : `${event.event}:${String(data.id)}:${String(data.status ?? "")}`,
+        )
         .digest("hex");
       const store = createBillingStore(ctx);
       const existingEvent = await store.findWebhookEvent(eventId);
       if (existingEvent?.status === "processed") return ctx.json({ received: true });
       const now = new Date();
+      const busy = () =>
+        new APIError("SERVICE_UNAVAILABLE", {
+          message: "Webhook processing is still in progress; retry delivery",
+        });
       if (existingEvent === null) {
         try {
           await store.createWebhookEvent({
@@ -562,89 +596,50 @@ export const flutterwaveWebhook = <P extends string>(options: AnyFlutterwaveOpti
         } catch (error) {
           const concurrent = await store.findWebhookEvent(eventId);
           if (concurrent === null) throw error;
-          if (concurrent.status === "processed" || concurrent.status === "processing") {
+          if (concurrent.status === "processed") {
             return ctx.json({ received: true });
           }
+          throw busy();
         }
       } else {
-        await store.updateWebhookEvent(eventId, { status: "processing", updatedAt: now });
+        const leaseExpiresAt = new Date(existingEvent.updatedAt).getTime() + 5 * 60_000;
+        if (existingEvent.status === "processing" && leaseExpiresAt > now.getTime()) throw busy();
+        if (!(await store.claimWebhookEvent(existingEvent, now))) throw busy();
       }
 
-      if (data.tx_ref && data.id !== undefined) {
-        try {
+      try {
+        if (data.tx_ref && data.id !== undefined) {
           const local = await store.findTransactionByTxRef(data.tx_ref);
+          if (!local) throw new Error("The webhook payment has not been recorded locally yet");
           const verified = await adapter(options).verifyTransaction({
             transactionId: Number(data.id),
           });
-          if (
-            local &&
-            verified.tx_ref === local.txRef &&
-            verified.amount === local.amount &&
-            verified.currency === local.currency
-          ) {
-            await store.updateTransactionByTxRef(local.txRef, {
-              transactionId: verified.id,
-              flwRef: verified.flw_ref,
-              chargedAmount: verified.charged_amount,
-              paymentType: verified.payment_type,
-              status: verified.status,
-              verifiedAt: now,
-              reconciledAt: now,
-              updatedAt: now,
-            });
-            if (verified.status === "successful") {
-              for (const subscription of await store.findSubscriptionsByTxRef(local.txRef)) {
-                let subscriptionId = subscription.subscriptionId;
-                if (
-                  subscription.paymentPlanId !== undefined &&
-                  subscription.paymentPlanId !== null &&
-                  subscription.billingEmail !== undefined &&
-                  subscription.billingEmail !== null &&
-                  subscription.billingEmail !== ""
-                ) {
-                  const remote = await adapter(options).listSubscriptions({
-                    email: subscription.billingEmail,
-                    plan: subscription.paymentPlanId,
-                    transactionId: verified.id,
-                  });
-                  const matches = remote.filter((candidate) => candidate.status !== "cancelled");
-                  subscriptionId = matches.length === 1 ? matches[0]?.id : undefined;
-                }
-                await store.updateSubscription(subscription.id, {
-                  subscriptionId,
-                  status:
-                    subscription.paymentPlanId !== undefined &&
-                    subscription.paymentPlanId !== null &&
-                    subscriptionId === undefined
-                      ? "incomplete"
-                      : "active",
-                  encryptedPaymentToken:
-                    verified.card?.token !== undefined
-                      ? await encryptPaymentToken(verified.card.token, ctx.context.secret)
-                      : subscription.encryptedPaymentToken,
-                  reconciledAt: now,
-                  updatedAt: now,
-                });
-                await store.retireCompetingSubscriptions(
-                  subscription.referenceId,
-                  subscription.groupId ?? null,
-                  subscription.id,
-                );
-              }
-            }
+          if (data.status === "successful" && verified.status !== "successful") {
+            throw new Error("The provider has not verified the successful payment yet");
           }
-        } catch (error) {
-          ctx.context.logger.error("Flutterwave webhook reconciliation failed", error);
-          await store.updateWebhookEvent(eventId, { status: "failed", updatedAt: new Date() });
-          return ctx.json({ received: true });
+          await recordVerifiedPayment(ctx, options, local, verified);
+          // Application fulfillment must see verified payment details, including its status.
+          Object.assign(data, {
+            id: verified.id,
+            tx_ref: verified.tx_ref,
+            amount: verified.amount,
+            currency: verified.currency,
+            status: verified.status,
+          });
         }
+        await options.onEvent?.(event);
+        await store.updateWebhookEvent(eventId, {
+          status: "processed",
+          processedAt: new Date(),
+          updatedAt: new Date(),
+        });
+      } catch (error) {
+        ctx.context.logger.error("Flutterwave webhook processing failed", error);
+        await store.updateWebhookEvent(eventId, { status: "failed", updatedAt: new Date() });
+        throw new APIError("SERVICE_UNAVAILABLE", {
+          message: "Webhook processing failed; retry delivery",
+        });
       }
-      await store.updateWebhookEvent(eventId, {
-        status: "processed",
-        processedAt: new Date(),
-        updatedAt: new Date(),
-      });
-      await options.onEvent?.(event);
       return ctx.json({ received: true });
     },
   );

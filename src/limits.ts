@@ -1,9 +1,9 @@
 import type { GenericEndpointContext } from "better-auth";
 import { APIError } from "better-auth/api";
 
-import type { AnyFlutterwaveOptions, Subscription } from "./types";
-import { createBillingStore } from "./billing-store";
-import { getPlanByName } from "./utils";
+import type { AnyFlutterwaveOptions, Subscription } from "./types.ts";
+import { createBillingStore } from "./billing-store.ts";
+import { getPlanByName } from "./utils.ts";
 
 export const getOrganizationSubscription = async (
   ctx: GenericEndpointContext,
