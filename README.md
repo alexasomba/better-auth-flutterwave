@@ -11,7 +11,7 @@ webhooks, refunds, and reconciliation.
 npm install better-auth better-auth-flutterwave
 ```
 
-Node.js 22.22.2 or newer is required. Development and CI use Node 22.23.3, pinned in `.node-version`, and pnpm 12.11.0. The current jsdom test environment sets the minimum Node 22 patch level.
+Node.js 22.22.2 or newer is required. Development and CI use Node 22.23.3, pinned in `.node-version`, and pnpm 12.11.2. The current jsdom test environment sets the minimum Node 22 patch level.
 
 ## Configure
 
