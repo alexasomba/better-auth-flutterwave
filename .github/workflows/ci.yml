@@ -44,8 +44,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Select matrix runtime for Vite+
-        run: pnpm exec vp env pin ${{ matrix.node }} --target node-version --force
+      - name: Align runtime pin with the selected Node version
+        run: node -e 'require("node:fs").writeFileSync(".node-version", process.versions.node + "\n")'
 
       - name: Check
         run: pnpm exec vp check
