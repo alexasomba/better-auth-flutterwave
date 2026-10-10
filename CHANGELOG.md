@@ -2,6 +2,13 @@
 
 All notable changes to `better-auth-flutterwave` will be documented in this file.
 
+## [0.4.0](https://github.com/alexasomba/better-auth-flutterwave/compare/v0.3.2...v0.4.0) (2026-10-10)
+
+
+### Features
+
+* add first-class Flutterwave v4 billing transport ([#52](https://github.com/alexasomba/better-auth-flutterwave/issues/52)) ([cfb8341](https://github.com/alexasomba/better-auth-flutterwave/commit/cfb8341513082d26d3caec574d28c80b70e470ac))
+
 ## [0.3.2](https://github.com/alexasomba/better-auth-flutterwave/compare/v0.3.1...v0.3.2) (2026-10-10)
 
 
