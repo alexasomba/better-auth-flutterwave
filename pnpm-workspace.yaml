@@ -98,3 +98,13 @@ minimumReleaseAgeExclude:
   - "miniflare@5.20261006.1-alpha"
   - "seroval@1.6.9"
   - "wrangler@4.149.0"
+  - vite-plus
+  - "@voidzero-dev/*"
+  - oxlint
+  - "@oxlint/*"
+  - oxlint-tsgolint
+  - "@oxlint-tsgolint/*"
+  - oxfmt
+  - "@oxfmt/*"
+  - vitest
+  - "@vitest/*"

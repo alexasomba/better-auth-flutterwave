@@ -168,7 +168,7 @@ function billingFixture() {
     return subscription;
   }
   async function webhook(
-    event = {
+    event: Row = {
       event: "charge.completed",
       data: { id: 42, tx_ref: "checkout-1", status: "successful" },
     },
@@ -390,6 +390,123 @@ describe("billing lifecycle", () => {
     expect(fixture.rows.flutterwaveWebhookEvent[0].status).toBe("processed");
   });
 
+  it("invokes subscription lifecycle hooks only after verified payment", async () => {
+    const fixture = billingFixture();
+    fixture.addPayment();
+    const subscription = fixture.addSubscription();
+    const onSubscriptionComplete = vi.fn().mockResolvedValue(undefined);
+    const onSubscriptionCreated = vi.fn().mockResolvedValue(undefined);
+    const onSubscriptionUpdate = vi.fn().mockResolvedValue(undefined);
+    fixture.options.subscription!.onSubscriptionComplete = onSubscriptionComplete;
+    fixture.options.subscription!.onSubscriptionCreated = onSubscriptionCreated;
+    fixture.options.subscription!.onSubscriptionUpdate = onSubscriptionUpdate;
+
+    await fixture.webhook();
+
+    expect(subscription.status).toBe("active");
+    expect(onSubscriptionComplete).toHaveBeenCalledTimes(1);
+    expect(onSubscriptionCreated).toHaveBeenCalledTimes(1);
+    expect(onSubscriptionUpdate).toHaveBeenCalledTimes(1);
+    expect(onSubscriptionComplete).toHaveBeenCalledWith(
+      expect.objectContaining({
+        subscription: expect.objectContaining({ status: "active" }),
+        plan: expect.objectContaining({ name: "pro" }),
+      }),
+      expect.any(Object),
+    );
+  });
+
+  it("syncs a native cancellation webhook by unique customer and payment-plan identity", async () => {
+    const fixture = billingFixture();
+    const subscription = fixture.addSubscription({ paymentPlanId: 9, subscriptionId: 3 });
+    fixture.options.subscription!.plans = [
+      { name: "pro", paymentPlanId: 9, amount: 5000, currency: "NGN", interval: "monthly" },
+    ];
+    const onSubscriptionCancel = vi.fn().mockResolvedValue(undefined);
+    const onSubscriptionUpdate = vi.fn().mockResolvedValue(undefined);
+    fixture.options.subscription!.onSubscriptionCancel = onSubscriptionCancel;
+    fixture.options.subscription!.onSubscriptionUpdate = onSubscriptionUpdate;
+
+    await fixture.webhook({
+      event: "subscription.cancelled",
+      data: {
+        status: "deactivated",
+        customer: { email: "buyer@example.test" },
+        plan: { id: 9 },
+      },
+    });
+
+    expect(subscription.status).toBe("canceled");
+    expect(subscription.endedAt).toBeInstanceOf(Date);
+    expect(onSubscriptionCancel).toHaveBeenCalledTimes(1);
+    expect(onSubscriptionUpdate).toHaveBeenCalledTimes(1);
+  });
+
+  it("preserves paid access for a scheduled provider cancellation", async () => {
+    const fixture = billingFixture();
+    const periodEnd = new Date("2026-11-01T12:00:00Z");
+    const subscription = fixture.addSubscription({
+      paymentPlanId: 9,
+      status: "active",
+      cancelAtPeriodEnd: true,
+      cancelAt: periodEnd,
+      periodEnd,
+    });
+    fixture.options.subscription!.plans = [
+      { name: "pro", paymentPlanId: 9, amount: 5000, currency: "NGN", interval: "monthly" },
+    ];
+    const onSubscriptionCancel = vi.fn().mockResolvedValue(undefined);
+    fixture.options.subscription!.onSubscriptionCancel = onSubscriptionCancel;
+
+    await fixture.webhook({
+      event: "subscription.cancelled",
+      data: {
+        status: "deactivated",
+        customer: { email: "buyer@example.test" },
+        plan: { id: 9 },
+      },
+    });
+
+    expect(subscription).toMatchObject({
+      status: "active",
+      cancelAtPeriodEnd: true,
+      cancelAt: periodEnd,
+      endedAt: null,
+    });
+    expect(onSubscriptionCancel).toHaveBeenCalledWith(
+      expect.objectContaining({
+        subscription: expect.objectContaining({ status: "active", endedAt: null }),
+      }),
+      expect.any(Object),
+    );
+  });
+
+  it("retries cancellation callbacks after a failed delivery", async () => {
+    const fixture = billingFixture();
+    const subscription = fixture.addSubscription({ paymentPlanId: 9, subscriptionId: 3 });
+    fixture.options.subscription!.plans = [
+      { name: "pro", paymentPlanId: 9, amount: 5000, currency: "NGN", interval: "monthly" },
+    ];
+    const onSubscriptionCancel = vi
+      .fn()
+      .mockRejectedValueOnce(new Error("callback unavailable"))
+      .mockResolvedValue(undefined);
+    fixture.options.subscription!.onSubscriptionCancel = onSubscriptionCancel;
+    const event = {
+      event: "subscription.cancelled",
+      data: {
+        status: "deactivated",
+        customer: { email: "buyer@example.test" },
+        plan: { id: 9 },
+      },
+    };
+
+    await expect(fixture.webhook(event)).rejects.toMatchObject({ status: "SERVICE_UNAVAILABLE" });
+    expect(subscription.status).toBe("canceled");
+    await expect(fixture.webhook(event)).resolves.toMatchObject({ received: true });
+    expect(onSubscriptionCancel).toHaveBeenCalledTimes(2);
+  });
+
   it("rejects a tampered raw webhook body before accessing storage or the provider", async () => {
     const fixture = billingFixture();
     const raw = JSON.stringify({ event: "charge.completed", data: { id: 42 } });
@@ -409,6 +526,70 @@ describe("billing lifecycle", () => {
     ).rejects.toMatchObject({ status: "UNAUTHORIZED" });
     expect(fixture.adapter.create).not.toHaveBeenCalled();
     expect(fixture.sdk.Transaction.verify).not.toHaveBeenCalled();
+  });
+
+  it("accepts the v3 verif-hash header used by the legacy webhook API", async () => {
+    const fixture = billingFixture();
+    const event = { event: "subscription.cancelled", data: {} };
+    const response = await flutterwaveWebhook(
+      fixture.options,
+      "/webhook",
+    )({
+      context: fixture.context as any,
+      request: new Request("http://localhost:3000/webhook", {
+        method: "POST",
+        body: JSON.stringify(event),
+        headers: { "verif-hash": fixture.options.secretHash },
+      }),
+    });
+
+    expect(response).toEqual({ received: true });
+    expect(fixture.rows.flutterwaveWebhookEvent[0]?.eventType).toBe("subscription.cancelled");
+  });
+
+  it("accepts, deduplicates, and delivers signed v4 webhook events", async () => {
+    const fixture = billingFixture();
+    const onEvent = vi.fn().mockResolvedValue(undefined);
+    fixture.options.onEvent = onEvent;
+    const event = {
+      webhook_id: "wbk_charge_1",
+      timestamp: 1_791_624_000_000,
+      type: "charge.completed",
+      data: {
+        id: "chg_charge_1",
+        reference: "checkout-v4-1",
+        amount: 2_500,
+        currency: "NGN",
+        status: "succeeded",
+        customer: { id: "cus_customer_1", email: "buyer@example.test" },
+      },
+    };
+    const raw = JSON.stringify(event);
+    const signature = await hmacSha256Base64(fixture.options.secretHash, raw);
+    const deliver = () =>
+      flutterwaveWebhook(
+        fixture.options,
+        "/webhook",
+      )({
+        context: fixture.context as any,
+        request: new Request("http://localhost:3000/webhook", {
+          method: "POST",
+          body: raw,
+          headers: { "flutterwave-signature": signature },
+        }),
+      });
+
+    await expect(deliver()).resolves.toEqual({ received: true });
+    await expect(deliver()).resolves.toEqual({ received: true });
+
+    expect(onEvent).toHaveBeenCalledTimes(1);
+    expect(onEvent).toHaveBeenCalledWith(event);
+    expect(fixture.rows.flutterwaveWebhookEvent[0]).toMatchObject({
+      eventId: "wbk_charge_1",
+      eventType: "charge.completed",
+      txRef: "checkout-v4-1",
+    });
+    expect(fixture.rows.flutterwaveWebhookEvent[0]?.transactionId).toBeUndefined();
   });
 
   it("only runs one callback for concurrent deliveries, including retry of a failed event", async () => {

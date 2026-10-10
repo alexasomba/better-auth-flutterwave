@@ -229,7 +229,11 @@ export async function refundFlutterwaveTransaction(
   const store = createBillingStore(ctx);
   const transaction = await store.findTransactionById(input.transactionId);
   if (!transaction) throw new APIError("NOT_FOUND", { message: "Transaction not found" });
-  const result = await adapter(options).refundTransaction(input.transactionId, input.amount);
+  const result = await adapter(options).refundTransaction(
+    input.transactionId,
+    input.amount,
+    input.reason,
+  );
   const now = new Date();
   return store.createRefund({
     refundId: result.id,

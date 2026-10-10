@@ -34,6 +34,10 @@ export interface BillingStore {
     exceptId: string,
   ): Promise<void>;
   findSubscriptionsByTxRef(txRef: string): Promise<FlutterwaveSubscription[]>;
+  findSubscriptionsByBillingEmailAndPlanId(
+    email: string,
+    paymentPlanId: number,
+  ): Promise<FlutterwaveSubscription[]>;
   listDueCancellations(now: Date, limit: number): Promise<FlutterwaveSubscription[]>;
   completeScheduledCancellation(subscription: FlutterwaveSubscription, now: Date): Promise<boolean>;
   createSubscription(
@@ -182,6 +186,11 @@ export function createBillingStoreFromAdapter(adapter: BillingStoreAdapter): Bil
     },
     findSubscriptionsByTxRef: (txRef) =>
       findMany("flutterwaveSubscription", [{ field: "txRef", value: txRef }]),
+    findSubscriptionsByBillingEmailAndPlanId: (email, paymentPlanId) =>
+      findMany("flutterwaveSubscription", [
+        { field: "billingEmail", value: email },
+        { field: "paymentPlanId", value: paymentPlanId },
+      ]),
     listDueCancellations: (now, limit) =>
       adapter.findMany({
         model: "flutterwaveSubscription",
