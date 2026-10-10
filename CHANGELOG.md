@@ -2,6 +2,14 @@
 
 All notable changes to `better-auth-flutterwave` will be documented in this file.
 
+## [0.3.2](https://github.com/alexasomba/better-auth-flutterwave/compare/v0.3.1...v0.3.2) (2026-10-10)
+
+
+### Miscellaneous Chores
+
+* align pnpm toolchain at 12.11.0 ([#48](https://github.com/alexasomba/better-auth-flutterwave/issues/48)) ([fc0bb50](https://github.com/alexasomba/better-auth-flutterwave/commit/fc0bb50f43baee28e5c0b043cd662edec3e968e2))
+* bump pnpm to 12.11.2 ([#50](https://github.com/alexasomba/better-auth-flutterwave/issues/50)) ([c3a0a48](https://github.com/alexasomba/better-auth-flutterwave/commit/c3a0a484adbc8b34218069611929c1de20dc5bef))
+
 ## [0.3.1](https://github.com/alexasomba/better-auth-flutterwave/compare/v0.3.0...v0.3.1) (2026-10-09)
 
 
