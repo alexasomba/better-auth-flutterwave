@@ -32,6 +32,18 @@ export {
 export type { FlutterwaveMetadata } from "./metadata.ts";
 export type { FlutterwaveTokenChargeInput } from "./flutterwave-contracts.ts";
 export { createFlutterwaveAdapter, FlutterwaveAdapterError } from "./flutterwave-sdk.ts";
+export { createFlutterwaveV4Adapter } from "./flutterwave-v4.ts";
+export type {
+  FlutterwaveV4Adapter,
+  FlutterwaveV4ChargeAuthorization,
+  FlutterwaveV4CardPaymentMethodInput,
+  FlutterwaveV4ChargeInput,
+  FlutterwaveV4CustomerInput,
+  FlutterwaveV4Options,
+  FlutterwaveV4RefundInput,
+  FlutterwaveV4RefundReason,
+  FlutterwaveV4Resource,
+} from "./flutterwave-v4.ts";
 export type {
   FlutterwaveAdapter,
   FlutterwaveAdapterOptions,

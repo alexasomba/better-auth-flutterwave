@@ -5,8 +5,12 @@ import type { FlutterwaveTransactionData } from "./flutterwave-contracts.ts";
 import { createFlutterwaveAdapter } from "./flutterwave-sdk.ts";
 import { parseFlutterwaveMetadata } from "./metadata.ts";
 import { encryptPaymentToken } from "./token-crypto.ts";
-import type { AnyFlutterwaveOptions, FlutterwaveTransaction } from "./types.ts";
-import { getNextPeriodEnd, normalizeSubscriptionGroup } from "./utils.ts";
+import type {
+  AnyFlutterwaveOptions,
+  FlutterwaveTransaction,
+  FlutterwaveWebhookEvent,
+} from "./types.ts";
+import { getNextPeriodEnd, getPlans, normalizeSubscriptionGroup } from "./utils.ts";
 
 export function paymentMatches(
   expected: FlutterwaveTransaction,
@@ -25,6 +29,7 @@ export async function recordVerifiedPayment(
   options: AnyFlutterwaveOptions,
   expected: FlutterwaveTransaction,
   verified: FlutterwaveTransactionData,
+  webhookEvent?: FlutterwaveWebhookEvent,
 ): Promise<void> {
   if (!paymentMatches(expected, verified)) {
     throw new APIError("BAD_REQUEST", {
@@ -102,7 +107,7 @@ export async function recordVerifiedPayment(
     const advancePeriod =
       subscription.periodEnd == null ||
       (renewal ? subscription.status === "past_due" : expected.status !== "successful");
-    const updated = await store.updateCurrentSubscription(subscription, {
+    const update = {
       subscriptionId,
       status: identified ? "active" : "incomplete",
       encryptedPaymentToken:
@@ -117,8 +122,44 @@ export async function recordVerifiedPayment(
         : {}),
       reconciledAt: now,
       updatedAt: now,
-    });
+    };
+    const updated = await store.updateCurrentSubscription(subscription, update);
     if (updated && identified) {
+      const plan = (await getPlans(options.subscription)).find(
+        (candidate) => candidate.name.toLowerCase() === subscription.plan.toLowerCase(),
+      );
+      if (plan) {
+        const callbackEvent: FlutterwaveWebhookEvent = webhookEvent ?? {
+          event: "charge.completed",
+          data: {
+            id: verified.id,
+            tx_ref: verified.tx_ref,
+            ...(verified.flw_ref !== undefined &&
+            verified.flw_ref !== null &&
+            verified.flw_ref !== ""
+              ? { flw_ref: verified.flw_ref }
+              : {}),
+            status: verified.status,
+            amount: verified.amount,
+            currency: verified.currency,
+          },
+        };
+        const currentSubscription = { ...subscription, ...update };
+        if (subscription.status === "incomplete") {
+          await options.subscription?.onSubscriptionComplete?.(
+            { event: callbackEvent, subscription: currentSubscription, plan },
+            ctx,
+          );
+          await options.subscription?.onSubscriptionCreated?.(
+            { event: callbackEvent, subscription: currentSubscription, plan },
+            ctx,
+          );
+        }
+        await options.subscription?.onSubscriptionUpdate?.(
+          { event: callbackEvent, subscription: currentSubscription, plan },
+          ctx,
+        );
+      }
       await store.retireCompetingSubscriptions(subscription.referenceId, group, subscription.id);
     }
   }

@@ -121,7 +121,7 @@ describe("Flutterwave provider adapter", () => {
       email: "customer@example.com",
       tx_ref: "renewal_123",
     });
-    await flutterwave.refundTransaction(42, 500);
+    await flutterwave.refundTransaction(42, 500, "Customer requested a refund");
 
     expect(fetch).toHaveBeenCalledTimes(8);
     const authenticated = {
@@ -174,7 +174,7 @@ describe("Flutterwave provider adapter", () => {
       expect.objectContaining({
         method: "POST",
         headers: authenticated,
-        body: JSON.stringify({ amount: 500 }),
+        body: JSON.stringify({ amount: 500, comments: "Customer requested a refund" }),
       }),
     );
   });

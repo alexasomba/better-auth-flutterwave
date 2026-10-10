@@ -66,6 +66,38 @@ The plugin calls Flutterwave's v3 API with Node's built-in `fetch`; you do not n
 Flutterwave SDK dependency. Inject `flutterwaveClient` for a custom provider boundary or `fetch` for
 tests and controlled transports.
 
+### Flutterwave v4 server API
+
+For new direct-charge integrations, the server entry point also exports
+`createFlutterwaveV4Adapter`. It uses OAuth client credentials, refreshes its cached token at least
+60 seconds before expiry, and exposes customer, encrypted card payment-method, charge, charge
+authorization, charge retrieval, and refund operations. Configure the sandbox base URL explicitly
+as `https://developersandbox-api.flutterwave.com`; the default base URL is production.
+These operations follow Flutterwave's [v4 authentication](https://developer.flutterwave.com/v4.0.0/docs/authentication),
+[card](https://developer.flutterwave.com/v4.0.0/docs/card),
+[charge](https://developer.flutterwave.com/v4/reference/charges_post), and
+[refund](https://developer.flutterwave.com/v4/reference/refunds_post) APIs.
+
+```ts
+import { createFlutterwaveV4Adapter } from "better-auth-flutterwave";
+
+const flutterwaveV4 = createFlutterwaveV4Adapter({
+  clientId: process.env.FLW_V4_CLIENT_ID!,
+  clientSecret: process.env.FLW_V4_CLIENT_SECRET!,
+  apiBaseUrl:
+    process.env.NODE_ENV === "production"
+      ? "https://f4bexperience.flutterwave.com"
+      : "https://developersandbox-api.flutterwave.com",
+});
+```
+
+Supply a stable, unique idempotency key for every write and reuse it when retrying. Card methods
+accept only Flutterwave-encrypted card fields and a nonce; never send raw PAN or CVV to this server
+adapter. The v4 adapter is a provider transport for trusted server routes. It does not create local
+Better Auth billing rows or fulfill a v4 charge automatically; verify the charge and match its
+reference, amount, currency, and customer to your own pending order before granting value. Existing
+Better Auth checkout and subscription routes continue to use v3 Standard Checkout and payment plans.
+
 Configure the client plugin:
 
 ```ts
@@ -167,22 +199,30 @@ organization with a Flutterwave subaccount.
 
 ## Webhooks
 
-Point Flutterwave at your Better Auth Flutterwave webhook endpoint. The plugin verifies
-`flutterwave-signature` as an HMAC-SHA256 digest of the exact raw request body using the separately
-configured `secretHash`. It compares signatures in constant time, records idempotency state, and
-re-verifies payment transactions before granting value. Keep custom `onEvent` work short so the
-endpoint can acknowledge within Flutterwave's timeout.
+Point Flutterwave at your Better Auth Flutterwave webhook endpoint. The plugin verifies v4
+`flutterwave-signature` values as base64 HMAC-SHA256 digests of the exact raw request body, and
+accepts the v3 `verif-hash` header for legacy v3 deliveries, as described in the
+[v4](https://developer.flutterwave.com/v4.0.0/docs/webhooks) and
+[v3](https://developer.flutterwave.com/docs/webhooks) webhook guides. Both comparisons are constant-time and
+use the separately configured `secretHash`. It records idempotency state and re-verifies v3 payment
+transactions before granting value. V4 event payloads are delivered to `onEvent` after signature
+verification and deduplication; retrieve the v4 charge and match it to a pending order before
+granting value. Keep custom `onEvent` work short so the endpoint can acknowledge within Flutterwave's
+timeout.
 
 Callback and reconciliation failures return a retryable HTTP 503. Webhook processing uses a
 database claim to prevent simultaneous callbacks for the same event, and an abandoned claim can
-be retried after five minutes. `onEvent` must still be idempotent: a crash after its external work
-but before recording completion can cause a later retry to execute it again.
+be retried after five minutes. Payment, subscription lifecycle, and `onEvent` callbacks must be
+idempotent: a crash after external work but before recording completion can cause a later retry to
+execute a callback again. A provider cancellation notification preserves access through a future
+scheduled paid-period end; immediate cancellations end access when processed.
 
 Do not parse and reserialize the request before signature verification. Do not use the API
 `secretKey` as the webhook secret hash.
 
-Polling and reconciliation are provided for pending transactions, subscriptions, and refunds, so
-correctness does not depend on webhook delivery.
+Polling and reconciliation are provided for pending v3 transactions and refunds. Native v3
+subscription state is updated from verified payment events and uniquely matched provider
+cancellation events; local subscription reconciliation is not currently exposed.
 
 ## Trusted server operations
 

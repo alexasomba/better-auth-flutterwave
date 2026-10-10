@@ -113,6 +113,22 @@ export interface FlutterwaveWebhookEvent {
     currency?: string;
     payment_type?: string;
     customer?: { email?: string };
+    plan?: { id?: number | string; name?: string };
+  };
+}
+
+export interface FlutterwaveV4WebhookEvent {
+  type: string;
+  id?: string;
+  webhook_id?: string;
+  timestamp?: string | number;
+  data: Record<string, unknown> & {
+    id?: string;
+    reference?: string;
+    status?: string;
+    amount?: number;
+    currency?: string;
+    customer?: { id?: string; email?: string };
   };
 }
 
@@ -187,7 +203,7 @@ export interface FlutterwaveOptions<
     allowedSubaccountIds: string[];
     defaultSplit?: FlutterwaveSubaccountSplit[];
   };
-  onEvent?: (event: FlutterwaveWebhookEvent) => Promise<void>;
+  onEvent?: (event: FlutterwaveWebhookEvent | FlutterwaveV4WebhookEvent) => Promise<void>;
   schema?: InferOptionSchema<FlutterwavePluginSchema>;
 }
 

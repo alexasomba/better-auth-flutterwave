@@ -25,7 +25,7 @@ export interface FlutterwaveClient {
   Transaction: {
     verify(input: { id: number }): SdkResult;
     verify_by_tx(input: { tx_ref: string }): SdkResult;
-    refund(input: { id: number; amount?: number }): SdkResult;
+    refund(input: { id: number; amount?: number; comments?: string }): SdkResult;
   };
   PaymentPlan: {
     get_all(input: Record<string, unknown>): SdkResult;
@@ -72,7 +72,11 @@ export interface FlutterwaveAdapter {
   cancelSubscription(subscriptionId: number): Promise<FlutterwaveSubscriptionData>;
   activateSubscription(subscriptionId: number): Promise<FlutterwaveSubscriptionData>;
   chargeToken(input: FlutterwaveTokenChargeInput): Promise<FlutterwaveTransactionData>;
-  refundTransaction(transactionId: number, amount?: number): Promise<FlutterwaveRefundData>;
+  refundTransaction(
+    transactionId: number,
+    amount?: number,
+    reason?: string,
+  ): Promise<FlutterwaveRefundData>;
 }
 
 export class FlutterwaveAdapterError extends Error {
@@ -144,8 +148,11 @@ function createHttpClient(
       verify: ({ id }) => request(`/v3/transactions/${id}/verify`),
       verify_by_tx: ({ tx_ref }) =>
         request(`/v3/transactions/verify_by_reference${queryString({ tx_ref })}`),
-      refund: ({ id, amount }) =>
-        post(`/v3/transactions/${id}/refund`, amount === undefined ? {} : { amount }),
+      refund: ({ id, amount, comments }) =>
+        post(`/v3/transactions/${id}/refund`, {
+          ...(amount === undefined ? {} : { amount }),
+          ...(comments === undefined ? {} : { comments }),
+        }),
     },
     PaymentPlan: {
       get_all: (query) => request(`/v3/payment-plans${queryString(query)}`),
@@ -335,13 +342,14 @@ export function createFlutterwaveAdapter(options: FlutterwaveAdapterOptions): Fl
       return sdkCall("charge token", () => client.Tokenized.charge(body), transactionSchema);
     },
 
-    refundTransaction: (transactionId, amount) =>
+    refundTransaction: (transactionId, amount, reason) =>
       sdkCall(
         "refund transaction",
         () =>
           client.Transaction.refund({
             id: positiveIdSchema.parse(transactionId),
             amount: optionalPositiveAmountSchema.parse(amount),
+            ...(reason === undefined ? {} : { comments: z.string().min(1).parse(reason) }),
           }),
         refundSchema,
       ),

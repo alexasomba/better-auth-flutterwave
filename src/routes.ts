@@ -27,6 +27,8 @@ import type {
   FlutterwaveInitializeResult,
   FlutterwaveProduct,
   FlutterwaveTransactionResponse,
+  FlutterwaveV4WebhookEvent,
+  FlutterwaveWebhookEvent,
   Session,
   User,
 } from "./types.ts";
@@ -74,7 +76,7 @@ const verifyBodySchema = z
     message: "Provide exactly one of transactionId or txRef",
   });
 
-const webhookPayloadSchema = z.object({
+const v3WebhookPayloadSchema = z.object({
   event: z.string().min(1),
   data: z
     .object({
@@ -87,6 +89,30 @@ const webhookPayloadSchema = z.object({
       currency: z.string().optional(),
       payment_type: z.string().optional(),
       customer: z.object({ email: z.string().optional() }).passthrough().optional(),
+      plan: z
+        .object({ id: z.union([z.string(), z.number()]).optional() })
+        .passthrough()
+        .optional(),
+    })
+    .passthrough(),
+});
+
+const v4WebhookPayloadSchema = z.object({
+  type: z.string().min(1),
+  id: z.string().optional(),
+  webhook_id: z.string().optional(),
+  timestamp: z.union([z.string(), z.number()]).optional(),
+  data: z
+    .object({
+      id: z.string().optional(),
+      reference: z.string().optional(),
+      status: z.string().optional(),
+      amount: z.coerce.number().optional(),
+      currency: z.string().optional(),
+      customer: z
+        .object({ id: z.string().optional(), email: z.string().optional() })
+        .passthrough()
+        .optional(),
     })
     .passthrough(),
 });
@@ -213,6 +239,12 @@ export const initializeTransaction = <P extends string>(options: AnyFlutterwaveO
         throw new APIError("BAD_REQUEST", { message: "Select a plan or a product, not both" });
       }
       if (plan) {
+        if (plan.freeTrial?.days !== undefined && plan.freeTrial.days > 0) {
+          throw new APIError("BAD_REQUEST", {
+            message:
+              "Flutterwave v3 checkout cannot start a no-charge trial. Do not configure freeTrial until a customer-visible tokenization charge and local trial lifecycle are implemented.",
+          });
+        }
         if (plan.amount === undefined || !Number.isFinite(plan.amount) || plan.amount <= 0) {
           throw new APIError("BAD_REQUEST", {
             message: "The plan requires a configured positive amount",
@@ -455,13 +487,32 @@ export const cancelSubscription = <P extends string>(options: AnyFlutterwaveOpti
       }
       if (local.subscriptionId != null)
         await adapter(options).cancelSubscription(local.subscriptionId);
-      await store.updateSubscription(local.id, {
+      const canceled = await store.updateSubscription(local.id, {
         status: "canceled",
         cancelAtPeriodEnd: false,
         canceledAt: now,
         endedAt: now,
         updatedAt: now,
       });
+      if (canceled) {
+        const plan = await getPlans(options.subscription).then((plans) =>
+          plans.find((candidate) => candidate.name.toLowerCase() === local.plan.toLowerCase()),
+        );
+        if (plan) {
+          const callbackData = {
+            event: { event: "subscription.cancelled", data: {} },
+            subscription: canceled,
+          };
+          await options.subscription?.onSubscriptionCancel?.(
+            callbackData,
+            ctx as GenericEndpointContext,
+          );
+          await options.subscription?.onSubscriptionUpdate?.(
+            { ...callbackData, plan },
+            ctx as GenericEndpointContext,
+          );
+        }
+      }
       return { status: "canceled" };
     },
   );
@@ -549,15 +600,19 @@ export const flutterwaveWebhook = <P extends string>(options: AnyFlutterwaveOpti
       const request = getWebhookRequest(ctx as GenericEndpointContext);
       if (!request) throw new APIError("BAD_REQUEST", { message: "Request is missing" });
       const rawBody = await request.text();
-      const signature = getWebhookHeaders(ctx as GenericEndpointContext)?.get(
-        "flutterwave-signature",
-      );
-      if (!signature) throw new APIError("UNAUTHORIZED", { message: "Missing signature" });
-      const expectedSignature = await hmacSha256Base64(
-        options.webhook?.secretHash ?? options.secretHash,
-        rawBody,
-      );
-      if (!timingSafeEqualString(signature, expectedSignature)) {
+      const headers = getWebhookHeaders(ctx as GenericEndpointContext);
+      const signature = headers?.get("flutterwave-signature");
+      const legacyHash = headers?.get("verif-hash");
+      const secretHash = options.webhook?.secretHash ?? options.secretHash;
+      if (typeof signature !== "string" && typeof legacyHash !== "string") {
+        throw new APIError("UNAUTHORIZED", { message: "Missing signature" });
+      }
+      const validV4Signature =
+        typeof signature === "string" &&
+        timingSafeEqualString(signature, await hmacSha256Base64(secretHash, rawBody));
+      const validV3Hash =
+        typeof legacyHash === "string" && timingSafeEqualString(legacyHash, secretHash);
+      if (!validV4Signature && !validV3Hash) {
         throw new APIError("UNAUTHORIZED", { message: "Invalid signature" });
       }
 
@@ -568,20 +623,32 @@ export const flutterwaveWebhook = <P extends string>(options: AnyFlutterwaveOpti
         ctx.context.logger.warn("Ignoring non-JSON signed Flutterwave webhook");
         return ctx.json({ received: true });
       }
-      const parsedEvent = webhookPayloadSchema.safeParse(webhookJson);
-      if (!parsedEvent.success) {
+      const parsedV3 = v3WebhookPayloadSchema.safeParse(webhookJson);
+      const parsedV4 = parsedV3.success ? undefined : v4WebhookPayloadSchema.safeParse(webhookJson);
+      if (!parsedV3.success && !parsedV4?.success) {
         ctx.context.logger.warn("Ignoring malformed signed Flutterwave webhook");
         return ctx.json({ received: true });
       }
-      const event = parsedEvent.data;
-      const data = event.data;
-      const eventId = createHash("sha256")
-        .update(
-          data.id === undefined
-            ? rawBody
-            : `${event.event}:${String(data.id)}:${String(data.status ?? "")}`,
-        )
-        .digest("hex");
+      let event: FlutterwaveWebhookEvent | FlutterwaveV4WebhookEvent;
+      if (parsedV3.success) event = parsedV3.data;
+      else if (parsedV4?.success) event = parsedV4.data;
+      else throw new APIError("BAD_REQUEST", { message: "Malformed webhook" });
+
+      const providerEventId = "type" in event ? (event.webhook_id ?? event.id) : undefined;
+      const eventId =
+        providerEventId ??
+        createHash("sha256")
+          .update(
+            "type" in event
+              ? rawBody
+              : event.data.id === undefined
+                ? rawBody
+                : `${event.event}:${String(event.data.id)}:${String(event.data.status ?? "")}`,
+          )
+          .digest("hex");
+      const eventType = "type" in event ? event.type : event.event;
+      const txRef = "type" in event ? event.data.reference : event.data.tx_ref;
+      const providerTransactionId = "type" in event ? undefined : event.data.id;
       const store = createBillingStore(ctx);
       const existingEvent = await store.findWebhookEvent(eventId);
       if (existingEvent?.status === "processed") return ctx.json({ received: true });
@@ -594,9 +661,13 @@ export const flutterwaveWebhook = <P extends string>(options: AnyFlutterwaveOpti
         try {
           await store.createWebhookEvent({
             eventId,
-            eventType: event.event,
-            transactionId: data.id === undefined ? undefined : Number(data.id),
-            txRef: data.tx_ref,
+            eventType,
+            transactionId:
+              providerTransactionId !== undefined &&
+              Number.isSafeInteger(Number(providerTransactionId))
+                ? Number(providerTransactionId)
+                : undefined,
+            txRef,
             payload: rawBody,
             status: "processing",
             createdAt: now,
@@ -617,8 +688,10 @@ export const flutterwaveWebhook = <P extends string>(options: AnyFlutterwaveOpti
       }
 
       try {
-        if (data.tx_ref && data.id !== undefined) {
-          const local = await store.findTransactionByTxRef(data.tx_ref);
+        const v3TransactionRef = "event" in event ? event.data.tx_ref : undefined;
+        if (v3TransactionRef && "event" in event && event.data.id !== undefined) {
+          const data = event.data;
+          const local = await store.findTransactionByTxRef(v3TransactionRef);
           if (!local) throw new Error("The webhook payment has not been recorded locally yet");
           const verified = await adapter(options).verifyTransaction({
             transactionId: Number(data.id),
@@ -626,7 +699,7 @@ export const flutterwaveWebhook = <P extends string>(options: AnyFlutterwaveOpti
           if (data.status === "successful" && verified.status !== "successful") {
             throw new Error("The provider has not verified the successful payment yet");
           }
-          await recordVerifiedPayment(ctx, options, local, verified);
+          await recordVerifiedPayment(ctx, options, local, verified, event);
           // Application fulfillment must see verified payment details, including its status.
           Object.assign(data, {
             id: verified.id,
@@ -635,6 +708,57 @@ export const flutterwaveWebhook = <P extends string>(options: AnyFlutterwaveOpti
             currency: verified.currency,
             status: verified.status,
           });
+        }
+        if ("event" in event && event.event === "subscription.cancelled") {
+          const customerEmail = event.data.customer?.email;
+          const planId = Number(event.data.plan?.id);
+          if (customerEmail && Number.isInteger(planId) && planId > 0) {
+            const matches = await store.findSubscriptionsByBillingEmailAndPlanId(
+              customerEmail,
+              planId,
+            );
+            if (matches.length === 1) {
+              const match = matches[0];
+              const now = new Date();
+              const scheduledEnd = match.cancelAt ?? match.periodEnd;
+              const keepPaidAccess =
+                match.status !== "canceled" &&
+                match.endedAt == null &&
+                match.cancelAtPeriodEnd &&
+                scheduledEnd != null &&
+                new Date(scheduledEnd).getTime() > now.getTime();
+              const canceled = await store.updateSubscription(match.id, {
+                status: keepPaidAccess ? match.status : "canceled",
+                cancelAtPeriodEnd: keepPaidAccess,
+                cancelAt: keepPaidAccess ? scheduledEnd : null,
+                canceledAt: match.canceledAt ?? now,
+                endedAt: keepPaidAccess ? null : (match.endedAt ?? now),
+                updatedAt: now,
+              });
+              const subscription = canceled ?? match;
+              const callbackData = { event, subscription };
+              // Callback failures make the webhook retryable; handlers must therefore be idempotent.
+              await options.subscription?.onSubscriptionCancel?.(
+                callbackData,
+                ctx as GenericEndpointContext,
+              );
+              const plan = await getPlans(options.subscription).then((plans) =>
+                plans.find(
+                  (candidate) => candidate.name.toLowerCase() === match.plan.toLowerCase(),
+                ),
+              );
+              if (plan) {
+                await options.subscription?.onSubscriptionUpdate?.(
+                  { ...callbackData, subscription, plan },
+                  ctx as GenericEndpointContext,
+                );
+              }
+            } else if (matches.length > 1) {
+              ctx.context.logger.warn(
+                "Flutterwave cancellation event matched multiple local subscriptions; manual reconciliation is required",
+              );
+            }
+          }
         }
         await options.onEvent?.(event);
         await store.updateWebhookEvent(eventId, {
