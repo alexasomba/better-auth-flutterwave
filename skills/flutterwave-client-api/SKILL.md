@@ -3,7 +3,7 @@ name: flutterwave-client-api
 description: Use the typed browser client exposed by better-auth-flutterwave.
 metadata:
   library: "better-auth-flutterwave"
-  version: "0.4.0" # x-release-please-version
+  version: "0.4.1" # x-release-please-version
 compatibility: "Node.js >=22; better-auth ^1.6"
 ---
 

@@ -1,6 +1,6 @@
 library:
   name: better-auth-flutterwave
-  version: 0.4.0
+  version: 0.4.1
   repository: https://github.com/alexasomba/better-auth-flutterwave
   description: >-
     Flutterwave billing plugin for Better Auth with subscriptions, transactions,

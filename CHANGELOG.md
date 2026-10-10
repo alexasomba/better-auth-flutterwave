@@ -2,6 +2,13 @@
 
 All notable changes to `better-auth-flutterwave` will be documented in this file.
 
+## [0.4.1](https://github.com/alexasomba/better-auth-flutterwave/compare/v0.4.0...v0.4.1) (2026-10-10)
+
+
+### Bug Fixes
+
+* recover billing callbacks and reconcile uncertain renewals ([#54](https://github.com/alexasomba/better-auth-flutterwave/issues/54)) ([f1e462c](https://github.com/alexasomba/better-auth-flutterwave/commit/f1e462c4f5ea4415df339c032875a944833beca8))
+
 ## [0.4.0](https://github.com/alexasomba/better-auth-flutterwave/compare/v0.3.2...v0.4.0) (2026-10-10)
 
 
