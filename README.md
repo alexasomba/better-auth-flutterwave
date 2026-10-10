@@ -217,6 +217,13 @@ idempotent: a crash after external work but before recording completion can caus
 execute a callback again. A provider cancellation notification preserves access through a future
 scheduled paid-period end; immediate cancellations end access when processed.
 
+Verified-payment lifecycle hooks share a durable fulfillment record across browser verification,
+webhooks, and reconciliation. The record retains initial subscription intent before activation and
+checkpoints each successful hook. A failed initial hook is retried even after the subscription becomes
+active; successful earlier hooks are skipped. Fulfillment records use the existing event table and
+five-minute leases, so concurrent requests retry instead of dispatching the same hooks simultaneously.
+Handlers must still be idempotent if external work succeeds before its checkpoint is stored.
+
 Do not parse and reserialize the request before signature verification. Do not use the API
 `secretKey` as the webhook secret hash.
 
@@ -257,6 +264,21 @@ jobs:
   invocation processes up to 100 requests by default (maximum 1,000); `hasMore` indicates that
   another batch may be needed. Scheduling requires a known paid `periodEnd`; legacy records must
   be reconciled first or canceled immediately.
+
+Renewal jobs should supply a stable `renewalId` and reuse it for every retry of the same billing
+intent. Without one, the plugin reserves the current paid-period end (or the initial period).
+New renewal intents are rejected before a future paid period ends. A pending transaction and dispatch intent are saved
+before charging. Once dispatch starts, retries verify that same reference and never initiate another
+charge, even if the provider response or subsequent verification was lost. A provider rejection or
+an unverifiable reference requires reconciliation or operator investigation; it does not authorize a
+new charge. Hosted-checkout retries return the saved URL. No provider-side idempotency guarantee is
+assumed. Completed `renewalId` retries return the original verified payment.
+
+For v3 refunds, `completed` means initiated and awaiting disbursement. Reconciliation also polls
+`processing`, `pending-momo`, and `pending`, and accepts only successful fetch responses with the
+expected refund ID. Method-specific terminal statuses such as `completed-mpgs` and
+`completed-bank-transfer` indicate successful disbursement. See the
+[Flutterwave v3 refund lifecycle](https://developer.flutterwave.com/docs/refunds).
 
 Cancellation and restoration accept either the local subscription `id` or a numeric Flutterwave
 `subscriptionId`. A scheduled local cancellation can be withdrawn while its paid period is still

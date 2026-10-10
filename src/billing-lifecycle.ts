@@ -1,9 +1,12 @@
+/* oxlint-disable no-restricted-imports */
 import type { GenericEndpointContext } from "better-auth";
 import { APIError } from "better-auth/api";
+import * as z from "zod";
 import { createBillingStore } from "./billing-store.ts";
 import type { FlutterwaveTransactionData } from "./flutterwave-contracts.ts";
 import { createFlutterwaveAdapter } from "./flutterwave-sdk.ts";
 import { parseFlutterwaveMetadata } from "./metadata.ts";
+import { acquireOperation, checkpointOperation, failOperation } from "./operation-ledger.ts";
 import { encryptPaymentToken } from "./token-crypto.ts";
 import type {
   AnyFlutterwaveOptions,
@@ -11,6 +14,11 @@ import type {
   FlutterwaveWebhookEvent,
 } from "./types.ts";
 import { getNextPeriodEnd, getPlans, normalizeSubscriptionGroup } from "./utils.ts";
+
+const fulfillmentSchema = z.object({
+  initialCompletion: z.boolean(),
+  completed: z.array(z.enum(["complete", "created", "update"])),
+});
 
 export function paymentMatches(
   expected: FlutterwaveTransaction,
@@ -123,8 +131,31 @@ export async function recordVerifiedPayment(
       reconciledAt: now,
       updatedAt: now,
     };
-    const updated = await store.updateCurrentSubscription(subscription, update);
-    if (updated && identified) {
+    if (!identified) {
+      await store.updateCurrentSubscription(subscription, update);
+      continue;
+    }
+    let operation = await acquireOperation(store, {
+      eventId: `internal:payment:${verified.id}:${subscription.id}`,
+      eventType: "internal.payment.fulfillment",
+      txRef: expected.txRef,
+      payload: JSON.stringify({
+        initialCompletion: subscription.status === "incomplete",
+        completed: [],
+      }),
+    });
+    if (operation.status === "processed") continue;
+    try {
+      const progress = fulfillmentSchema.parse(JSON.parse(operation.payload));
+      // The ledger retains initial-completion intent even if a prior worker already activated the row.
+      const updated = await store.updateCurrentSubscription(subscription, update);
+      if (!updated) {
+        operation = await checkpointOperation(store, operation, {
+          status: "processed",
+          processedAt: new Date(),
+        });
+        continue;
+      }
       const plan = (await getPlans(options.subscription)).find(
         (candidate) => candidate.name.toLowerCase() === subscription.plan.toLowerCase(),
       );
@@ -145,22 +176,41 @@ export async function recordVerifiedPayment(
           },
         };
         const currentSubscription = { ...subscription, ...update };
-        if (subscription.status === "incomplete") {
-          await options.subscription?.onSubscriptionComplete?.(
-            { event: callbackEvent, subscription: currentSubscription, plan },
-            ctx,
-          );
-          await options.subscription?.onSubscriptionCreated?.(
-            { event: callbackEvent, subscription: currentSubscription, plan },
-            ctx,
-          );
+        const callbackData = { event: callbackEvent, subscription: currentSubscription, plan };
+        const callbacks = [
+          {
+            key: "complete" as const,
+            callback: progress.initialCompletion
+              ? options.subscription?.onSubscriptionComplete
+              : undefined,
+          },
+          {
+            key: "created" as const,
+            callback: progress.initialCompletion
+              ? options.subscription?.onSubscriptionCreated
+              : undefined,
+          },
+          { key: "update" as const, callback: options.subscription?.onSubscriptionUpdate },
+        ];
+        for (const { key, callback } of callbacks) {
+          if (progress.completed.includes(key)) continue;
+          // Refresh the lease before external work; handlers must still tolerate at-least-once delivery.
+          operation = await checkpointOperation(store, operation, {});
+          await callback?.(callbackData, ctx);
+          progress.completed.push(key);
+          operation = await checkpointOperation(store, operation, {
+            payload: JSON.stringify(progress),
+          });
         }
-        await options.subscription?.onSubscriptionUpdate?.(
-          { event: callbackEvent, subscription: currentSubscription, plan },
-          ctx,
-        );
       }
       await store.retireCompetingSubscriptions(subscription.referenceId, group, subscription.id);
+      operation = await checkpointOperation(store, operation, {
+        status: "processed",
+        processedAt: new Date(),
+      });
+    } catch (error) {
+      await failOperation(store, operation);
+      throw error;
     }
   }
 }

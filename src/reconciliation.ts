@@ -72,11 +72,11 @@ export async function reconcileFlutterwaveTransaction(
 }
 
 const refundEnvelopeSchema = z.object({
-  status: z.string(),
+  status: z.literal("success"),
   data: z.object({
-    id: z.coerce.number().optional(),
-    status: z.string(),
-    amount_refunded: z.coerce.number().optional(),
+    id: z.coerce.number().int().positive(),
+    status: z.string().min(1),
+    amount_refunded: z.coerce.number().nonnegative().optional(),
   }),
 });
 
@@ -96,7 +96,7 @@ export async function reconcileFlutterwaveRefunds(
     });
     if (!response.ok) continue;
     const parsed = refundEnvelopeSchema.safeParse(await response.json());
-    if (!parsed.success) continue;
+    if (!parsed.success || parsed.data.data.id !== refund.refundId) continue;
     await store.updateRefund(refund.id, {
       status: parsed.data.data.status,
       amount: parsed.data.data.amount_refunded ?? refund.amount,
