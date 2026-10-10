@@ -277,6 +277,8 @@ export interface ChargeRecurringSubscriptionInput {
   subscriptionId: string;
   amount?: number;
   redirectUrl?: string;
+  /** Stable job/payment intent identifier; reuse it for every retry of the same renewal. */
+  renewalId?: string;
 }
 export interface ChargeRecurringSubscriptionResult {
   status: "success" | "pending" | "failed";

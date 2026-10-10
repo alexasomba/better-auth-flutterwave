@@ -16,8 +16,12 @@ concurrency:
 
 jobs:
   validate:
-    name: Validate
+    name: Validate (Node ${{ matrix.node }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ["22", "24"]
     env:
       NPM_CONFIG_OPTIONAL: "true"
     steps:
@@ -27,7 +31,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v6
         with:
-          node-version: "22.23.3"
+          node-version: ${{ matrix.node }}
           package-manager-cache: false
 
       - name: Setup pnpm
@@ -39,6 +43,9 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Align runtime pin with the selected Node version
+        run: node -e 'require("node:fs").writeFileSync(".node-version", process.versions.node + "\n")'
 
       - name: Check
         run: pnpm exec vp check

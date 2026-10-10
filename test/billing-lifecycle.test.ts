@@ -8,7 +8,10 @@ import {
   restoreSubscription,
   verifyTransaction,
 } from "../src/routes.ts";
-import { reconcileFlutterwaveTransaction } from "../src/reconciliation.ts";
+import {
+  reconcileFlutterwaveRefunds,
+  reconcileFlutterwaveTransaction,
+} from "../src/reconciliation.ts";
 import {
   chargeSubscriptionRenewal,
   processScheduledFlutterwaveCancellations,
@@ -100,7 +103,7 @@ function billingFixture() {
       })),
       activate: vi.fn(),
     },
-    Tokenized: { charge: vi.fn(async () => ({ status: "success", data: verified })) },
+    Tokenized: { charge: vi.fn(async (_input: Row) => ({ status: "success", data: verified })) },
   };
   const fetch = vi.fn(async () =>
     Response.json({ status: "success", data: { link: "https://checkout.example.test/pay" } }),
@@ -203,6 +206,295 @@ function billingFixture() {
 }
 
 afterEach(() => vi.useRealTimers());
+
+describe("durable payment recovery", () => {
+  it("retries a failed completion hook and dispatches the remaining initial hooks", async () => {
+    const fixture = billingFixture();
+    fixture.addPayment();
+    fixture.addSubscription();
+    const complete = vi
+      .fn()
+      .mockRejectedValueOnce(new Error("temporary completion failure"))
+      .mockResolvedValue(undefined);
+    const created = vi.fn().mockResolvedValue(undefined);
+    fixture.options.subscription!.onSubscriptionComplete = complete;
+    fixture.options.subscription!.onSubscriptionCreated = created;
+    await expect(fixture.webhook()).rejects.toMatchObject({ status: "SERVICE_UNAVAILABLE" });
+    await fixture.webhook();
+    expect(complete).toHaveBeenCalledTimes(2);
+    expect(created).toHaveBeenCalledTimes(1);
+  });
+
+  it("serializes lifecycle hooks across browser verification and webhook delivery", async () => {
+    const fixture = billingFixture();
+    fixture.addPayment();
+    fixture.addSubscription();
+    let release!: () => void;
+    const complete = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          release = resolve;
+        }),
+    );
+    fixture.options.subscription!.onSubscriptionComplete = complete;
+    const first = verifyTransaction(
+      fixture.options,
+      "/verify",
+    )({ context: fixture.context as any, body: { txRef: "checkout-1" } });
+    await vi.waitFor(() => expect(complete).toHaveBeenCalledTimes(1));
+    await expect(fixture.webhook()).rejects.toMatchObject({ status: "SERVICE_UNAVAILABLE" });
+    release();
+    await first;
+    await fixture.webhook();
+    expect(complete).toHaveBeenCalledTimes(1);
+  });
+
+  it("recovers initial intent after activation succeeds but the first callback checkpoint fails", async () => {
+    const fixture = billingFixture();
+    fixture.addPayment();
+    fixture.addSubscription();
+    const complete = vi.fn().mockResolvedValue(undefined);
+    fixture.options.subscription!.onSubscriptionComplete = complete;
+    const updateMany = fixture.adapter.updateMany.getMockImplementation()!;
+    let unavailable = true;
+    fixture.adapter.updateMany.mockImplementation(async (input: any) => {
+      if (
+        unavailable &&
+        input.model === "flutterwaveWebhookEvent" &&
+        String(input.where[0].value).startsWith("internal:payment:") &&
+        input.update.payload === undefined
+      ) {
+        unavailable = false;
+        throw new Error("checkpoint unavailable after activation");
+      }
+      return updateMany(input);
+    });
+    await expect(fixture.webhook()).rejects.toMatchObject({ status: "SERVICE_UNAVAILABLE" });
+    expect(fixture.rows.flutterwaveSubscription[0].status).toBe("active");
+    expect(complete).not.toHaveBeenCalled();
+    await fixture.webhook();
+    expect(complete).toHaveBeenCalledTimes(1);
+  });
+
+  it("deduplicates verified renewal hooks and period advancement across different event identities", async () => {
+    const fixture = billingFixture();
+    fixture.addPayment({
+      metadata: JSON.stringify({ type: "renewal", subscriptionId: "subscription-1" }),
+    });
+    const subscription = fixture.addSubscription({
+      status: "past_due",
+      periodEnd: new Date("2026-02-01T12:00:00Z"),
+    });
+    const updated = vi.fn().mockResolvedValue(undefined);
+    fixture.options.subscription!.onSubscriptionUpdate = updated;
+    await fixture.webhook();
+    const end = subscription.periodEnd;
+    await fixture.webhook({
+      event: "charge.completed",
+      data: { id: 42, tx_ref: "checkout-1", status: "pending" },
+    });
+    expect(subscription.periodEnd).toEqual(end);
+    expect(updated).toHaveBeenCalledTimes(1);
+  });
+
+  it("recovers abandoned fulfillment leases and prevents stale owners from completing them", async () => {
+    const fixture = billingFixture();
+    fixture.addPayment();
+    fixture.addSubscription();
+    let release!: () => void;
+    const complete = vi
+      .fn()
+      .mockImplementationOnce(
+        () =>
+          new Promise<void>((resolve) => {
+            release = resolve;
+          }),
+      )
+      .mockResolvedValue(undefined);
+    const created = vi.fn().mockResolvedValue(undefined);
+    fixture.options.subscription!.onSubscriptionComplete = complete;
+    fixture.options.subscription!.onSubscriptionCreated = created;
+    const first = reconcileFlutterwaveTransaction(fixture.ctx, fixture.options, {
+      txRef: "checkout-1",
+    }).catch((error: unknown) => error);
+    await vi.waitFor(() => expect(complete).toHaveBeenCalledTimes(1));
+    const ledger = fixture.rows.flutterwaveWebhookEvent.find(
+      (row) => row.eventType === "internal.payment.fulfillment",
+    )!;
+    ledger.updatedAt = new Date(Date.now() - 6 * 60_000);
+    await reconcileFlutterwaveTransaction(fixture.ctx, fixture.options, { txRef: "checkout-1" });
+    release();
+    expect(await first).toMatchObject({ status: "SERVICE_UNAVAILABLE" });
+    expect(complete).toHaveBeenCalledTimes(2);
+    expect(created).toHaveBeenCalledTimes(1);
+    expect(ledger.status).toBe("processed");
+  });
+  it("recovers initial lifecycle hooks through reconciliation after browser verification fails", async () => {
+    const fixture = billingFixture();
+    fixture.addPayment();
+    fixture.addSubscription();
+    const complete = vi.fn().mockResolvedValue(undefined);
+    const created = vi
+      .fn()
+      .mockRejectedValueOnce(new Error("temporarily unavailable"))
+      .mockResolvedValue(undefined);
+    fixture.options.subscription!.onSubscriptionComplete = complete;
+    fixture.options.subscription!.onSubscriptionCreated = created;
+    await expect(
+      verifyTransaction(
+        fixture.options,
+        "/verify",
+      )({ context: fixture.context as any, body: { txRef: "checkout-1" } }),
+    ).rejects.toThrow("temporarily unavailable");
+    await reconcileFlutterwaveTransaction(fixture.ctx, fixture.options, { txRef: "checkout-1" });
+    await fixture.webhook();
+    expect(complete).toHaveBeenCalledTimes(1);
+    expect(created).toHaveBeenCalledTimes(2);
+  });
+
+  it("reconciles a reserved renewal after verification fails without charging again", async () => {
+    const fixture = billingFixture();
+    fixture.addSubscription({
+      status: "active",
+      encryptedPaymentToken: await encryptPaymentToken("token", fixture.context.secret),
+    });
+    fixture.sdk.Tokenized.charge.mockImplementation(async (input: any) => {
+      Object.assign(fixture.verified, { tx_ref: input.tx_ref, amount: input.amount });
+      return { status: "success", data: fixture.verified };
+    });
+    fixture.sdk.Transaction.verify.mockRejectedValueOnce(new Error("verification timeout"));
+    await expect(
+      chargeSubscriptionRenewal(fixture.ctx, fixture.options, { subscriptionId: "subscription-1" }),
+    ).rejects.toThrow("verification timeout");
+    expect(fixture.rows.flutterwaveTransaction).toHaveLength(1);
+    await chargeSubscriptionRenewal(fixture.ctx, fixture.options, {
+      subscriptionId: "subscription-1",
+    });
+    expect(fixture.sdk.Tokenized.charge).toHaveBeenCalledTimes(1);
+    expect(fixture.sdk.Transaction.verify_by_tx).toHaveBeenCalledWith({
+      tx_ref: fixture.verified.tx_ref,
+    });
+  });
+
+  it("does not recharge after an ambiguous dispatch or a missing provider transaction", async () => {
+    const fixture = billingFixture();
+    fixture.addSubscription({
+      status: "active",
+      encryptedPaymentToken: await encryptPaymentToken("token", fixture.context.secret),
+    });
+    fixture.sdk.Tokenized.charge.mockRejectedValueOnce(new Error("dispatch response lost"));
+    fixture.sdk.Transaction.verify_by_tx.mockRejectedValueOnce(
+      new Error("reference not yet found"),
+    );
+    const input = { subscriptionId: "subscription-1", renewalId: "scheduled-job-1" };
+    await expect(chargeSubscriptionRenewal(fixture.ctx, fixture.options, input)).rejects.toThrow(
+      "dispatch response lost",
+    );
+    await expect(chargeSubscriptionRenewal(fixture.ctx, fixture.options, input)).rejects.toThrow(
+      "reference not yet found",
+    );
+    expect(fixture.sdk.Tokenized.charge).toHaveBeenCalledTimes(1);
+    expect(fixture.rows.flutterwaveTransaction).toHaveLength(1);
+  });
+
+  it("allows only one provider dispatch for concurrent renewal jobs", async () => {
+    const fixture = billingFixture();
+    fixture.addSubscription({
+      status: "active",
+      encryptedPaymentToken: await encryptPaymentToken("token", fixture.context.secret),
+    });
+    let release!: () => void;
+    fixture.sdk.Tokenized.charge.mockImplementation(async (input: Row) => {
+      Object.assign(fixture.verified, { tx_ref: input.tx_ref, amount: input.amount });
+      await new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      return { status: "success", data: fixture.verified };
+    });
+    const input = { subscriptionId: "subscription-1", renewalId: "scheduled-job-1" };
+    const first = chargeSubscriptionRenewal(fixture.ctx, fixture.options, input);
+    await vi.waitFor(() => expect(fixture.sdk.Tokenized.charge).toHaveBeenCalledTimes(1));
+    await expect(
+      chargeSubscriptionRenewal(fixture.ctx, fixture.options, input),
+    ).rejects.toMatchObject({ status: "SERVICE_UNAVAILABLE" });
+    release();
+    await first;
+    await chargeSubscriptionRenewal(fixture.ctx, fixture.options, input);
+    expect(fixture.sdk.Tokenized.charge).toHaveBeenCalledTimes(1);
+  });
+
+  it("blocks a different renewal intent while a dispatched payment is unresolved", async () => {
+    const fixture = billingFixture();
+    fixture.addSubscription({
+      status: "active",
+      encryptedPaymentToken: await encryptPaymentToken("token", fixture.context.secret),
+    });
+    fixture.sdk.Tokenized.charge.mockRejectedValueOnce(new Error("dispatch outcome unknown"));
+    await expect(
+      chargeSubscriptionRenewal(fixture.ctx, fixture.options, {
+        subscriptionId: "subscription-1",
+        renewalId: "job-1",
+      }),
+    ).rejects.toThrow("dispatch outcome unknown");
+    await expect(
+      chargeSubscriptionRenewal(fixture.ctx, fixture.options, {
+        subscriptionId: "subscription-1",
+        renewalId: "job-2",
+      }),
+    ).rejects.toMatchObject({ status: "SERVICE_UNAVAILABLE" });
+    expect(fixture.sdk.Tokenized.charge).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects early renewal before the paid period ends", async () => {
+    const fixture = billingFixture();
+    fixture.addSubscription({
+      status: "active",
+      periodEnd: new Date(Date.now() + 86_400_000),
+      encryptedPaymentToken: await encryptPaymentToken("token", fixture.context.secret),
+    });
+    await expect(
+      chargeSubscriptionRenewal(fixture.ctx, fixture.options, {
+        subscriptionId: "subscription-1",
+        renewalId: "new-job",
+      }),
+    ).rejects.toMatchObject({ status: "BAD_REQUEST" });
+    expect(fixture.sdk.Tokenized.charge).not.toHaveBeenCalled();
+  });
+
+  it("reuses saved checkout URLs for repeated renewal jobs", async () => {
+    const fixture = billingFixture();
+    fixture.addSubscription({ status: "active" });
+    const input = {
+      subscriptionId: "subscription-1",
+      redirectUrl: "http://localhost:3000/callback",
+      renewalId: "scheduled-job-1",
+    };
+    const first = await chargeSubscriptionRenewal(fixture.ctx, fixture.options, input);
+    const second = await chargeSubscriptionRenewal(fixture.ctx, fixture.options, input);
+    expect(second).toEqual(first);
+    expect(fixture.fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("polls v3 intermediate refunds and rejects unsuccessful or mismatched envelopes", async () => {
+    const fixture = billingFixture();
+    fixture.rows.flutterwaveRefund = ["completed", "processing", "pending-momo"].map(
+      (status, index) => ({ id: `refund-${index}`, refundId: index + 1, status, amount: 5000 }),
+    );
+    fixture.fetch.mockImplementation(async () =>
+      Response.json({
+        status: "success",
+        data: { id: 1, status: "completed-mpgs", amount_refunded: 5000 },
+      }),
+    );
+    const result = await reconcileFlutterwaveRefunds(fixture.ctx, fixture.options);
+    expect(result.count).toBe(1);
+    expect(fixture.fetch).toHaveBeenCalledTimes(3);
+    fixture.fetch.mockImplementation(async () =>
+      Response.json({ status: "error", data: { id: 2, status: "completed-mpgs" } }),
+    );
+    expect((await reconcileFlutterwaveRefunds(fixture.ctx, fixture.options)).count).toBe(0);
+  });
+});
 
 describe("billing lifecycle", () => {
   it("rejects cookie-authenticated verification from an untrusted origin before contacting Flutterwave", async () => {
@@ -662,7 +954,7 @@ describe("billing lifecycle", () => {
     const encryptedPaymentToken = await encryptPaymentToken("token", fixture.context.secret);
     fixture.addSubscription({ status: "active", seats: 3, encryptedPaymentToken });
     fixture.sdk.Tokenized.charge.mockImplementation(async () => {
-      const charge = fixture.sdk.Tokenized.charge.mock.calls[0] as unknown as [Row];
+      const charge = fixture.sdk.Tokenized.charge.mock.calls[0];
       Object.assign(fixture.verified, { tx_ref: charge[0].tx_ref, amount: charge[0].amount });
       return { status: "success", data: fixture.verified };
     });

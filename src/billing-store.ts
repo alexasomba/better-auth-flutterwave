@@ -92,6 +92,10 @@ export interface BillingStore {
     update: Partial<FlutterwaveWebhookEventRecord> & Record<string, unknown>,
   ): Promise<FlutterwaveWebhookEventRecord | null>;
   claimWebhookEvent(event: FlutterwaveWebhookEventRecord, now: Date): Promise<boolean>;
+  updateOwnedWebhookEvent(
+    event: FlutterwaveWebhookEventRecord,
+    update: Partial<FlutterwaveWebhookEventRecord>,
+  ): Promise<boolean>;
   createRefund(
     data: Partial<FlutterwaveRefund> & Record<string, unknown>,
   ): Promise<FlutterwaveRefund>;
@@ -335,12 +339,33 @@ export function createBillingStoreFromAdapter(adapter: BillingStoreAdapter): Bil
       });
       return claimed === 1;
     },
+    async updateOwnedWebhookEvent(event, update) {
+      const count = await adapter.updateMany({
+        model: "flutterwaveWebhookEvent",
+        where: [
+          { field: "eventId", value: event.eventId },
+          { field: "status", value: "processing" },
+          { field: "updatedAt", value: new Date(event.updatedAt) },
+        ],
+        update,
+      });
+      return count === 1;
+    },
     createRefund: (data) =>
       adapter.create({ model: "flutterwaveRefund", data }) as Promise<FlutterwaveRefund>,
     findRefundByProviderId: (refundId) =>
       findOne("flutterwaveRefund", [{ field: "refundId", value: refundId }]),
     listPendingRefunds: () =>
-      findMany("flutterwaveRefund", [{ field: "status", value: "pending" }]),
+      adapter.findMany({
+        model: "flutterwaveRefund",
+        where: [
+          {
+            field: "status",
+            operator: "in",
+            value: ["pending", "completed", "processing", "pending-momo"],
+          },
+        ],
+      }),
     updateRefund: (id, update) =>
       adapter.update({ model: "flutterwaveRefund", update, where: [{ field: "id", value: id }] }),
     findUser: (id) => findOne("user", [{ field: "id", value: id }]),
