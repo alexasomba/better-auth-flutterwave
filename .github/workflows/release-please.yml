@@ -72,7 +72,7 @@ jobs:
 
       - name: Setup pnpm
         if: ${{ env.release_tag != '' }}
-        run: npm install --global pnpm@12.11.0
+        run: npm install --global pnpm@12.11.2
 
       - name: Install dependencies
         if: ${{ env.release_tag != '' }}
