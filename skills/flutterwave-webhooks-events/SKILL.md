@@ -3,7 +3,7 @@ name: flutterwave-webhooks-events
 description: Implement secure and idempotent Flutterwave webhook handling.
 metadata:
   library: "better-auth-flutterwave"
-  version: "0.3.2" # x-release-please-version
+  version: "0.4.0" # x-release-please-version
 compatibility: "Node.js >=22; better-auth ^1.6"
 ---
 
