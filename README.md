@@ -1,5 +1,7 @@
 # Better Auth Flutterwave
 
+[English](README.md) · [Español](README.es-ES.md) · [Français](README.fr-FR.md)
+
 A TypeScript-first [Better Auth](https://www.better-auth.com) plugin for Flutterwave v3 payments.
 It supports Flutterwave Standard checkout, verified one-time payments, native payment-plan
 subscriptions, locally managed subscriptions, organization billing, marketplace split payments,
