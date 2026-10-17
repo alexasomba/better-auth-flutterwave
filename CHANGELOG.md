@@ -2,6 +2,13 @@
 
 All notable changes to `better-auth-flutterwave` will be documented in this file.
 
+## [0.4.2](https://github.com/alexasomba/better-auth-flutterwave/compare/v0.4.1...v0.4.2) (2026-10-15)
+
+
+### Miscellaneous Chores
+
+* **deps:** bump @types/node from 22.20.5 to 26.6.5 ([#56](https://github.com/alexasomba/better-auth-flutterwave/issues/56)) ([85be843](https://github.com/alexasomba/better-auth-flutterwave/commit/85be843a36562895d3e7f656df39bae799203b02))
+
 ## [0.4.1](https://github.com/alexasomba/better-auth-flutterwave/compare/v0.4.0...v0.4.1) (2026-10-10)
 
 
