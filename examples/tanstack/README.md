@@ -1,5 +1,7 @@
 # Better Auth Flutterwave – TanStack Start example
 
+[English](README.md) · [Español](README.es-ES.md) · [Français](README.fr-FR.md)
+
 This application demonstrates Better Auth sessions, organization authorization, Flutterwave
 Standard checkout, verified transactions, native and local subscriptions, a local product catalog,
 subscription cancellation/restoration, transaction history, and trusted server operations.
