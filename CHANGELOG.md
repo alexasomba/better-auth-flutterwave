@@ -2,6 +2,13 @@
 
 All notable changes to `better-auth-flutterwave` will be documented in this file.
 
+## [0.4.3](https://github.com/alexasomba/better-auth-flutterwave/compare/v0.4.2...v0.4.3) (2026-10-17)
+
+
+### Documentation
+
+* **readme:** add Spanish and French translations ([#58](https://github.com/alexasomba/better-auth-flutterwave/issues/58)) ([333d16c](https://github.com/alexasomba/better-auth-flutterwave/commit/333d16c8f44714c0ae04503f78378f3cace48315))
+
 ## [0.4.2](https://github.com/alexasomba/better-auth-flutterwave/compare/v0.4.1...v0.4.2) (2026-10-15)
 
 
